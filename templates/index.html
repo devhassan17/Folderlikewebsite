@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero">
+    <h1>Welcome to My Music</h1>
+    <p>Click the folder below to explore my media</p>
+    
+    <div class="folder-container">
+        <a href="{{ url_for('gallery') }}" class="modern-folder">
+            <i class="fas fa-folder"></i>
+            <span>Media Gallery</span>
+        </a>
+        
+        {% if not session.logged_in %}
+            <a href="{{ url_for('login') }}" class="admin-link">Admin Login</a>
+        {% else %}
+            <a href="{{ url_for('upload') }}" class="admin-link">Upload Media</a>
+            <a href="{{ url_for('logout') }}" class="admin-link">Logout</a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

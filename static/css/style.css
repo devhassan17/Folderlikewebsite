@@ -1,0 +1,469 @@
+/* Base Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f5f5;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Flash Messages */
+.flash-success {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.flash-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    color: white;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.hero h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+}
+
+/* Modern Folder */
+.folder-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.modern-folder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: white;
+    transition: transform 0.3s;
+    margin-bottom: 20px;
+}
+
+.modern-folder:hover {
+    transform: scale(1.05);
+}
+
+.modern-folder i {
+    font-size: 5rem;
+    margin-bottom: 10px;
+    color: #FFD700;
+}
+
+.modern-folder span {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.admin-link {
+    color: white;
+    text-decoration: none;
+    margin-top: 20px;
+    padding: 8px 15px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    transition: background-color 0.3s;
+}
+
+.admin-link:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Gallery Styles */
+.gallery-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.gallery-header h2 {
+    font-size: 2rem;
+    color: #444;
+}
+
+.upload-btn {
+    background-color: #6e8efb;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+.upload-btn:hover {
+    background-color: #5a7df4;
+}
+
+/* Tabs */
+.media-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn.active {
+    color: #6e8efb;
+    border-bottom: 3px solid #6e8efb;
+    font-weight: bold;
+}
+
+.tab-content {
+    display: none;
+}
+
+/* Media Grid */
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.media-item {
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s;
+}
+
+.media-item:hover {
+    transform: translateY(-5px);
+}
+
+.thumbnail {
+    height: 180px;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.thumbnail.audio {
+    background-color: #f0f8ff;
+}
+
+.thumbnail.video {
+    background-color: #fff0f5;
+}
+
+.thumbnail i {
+    font-size: 3rem;
+    color: #6e8efb;
+}
+
+.media-title {
+    padding: 15px;
+    font-weight: bold;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+audio, video {
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* Login Form */
+.login-container {
+    max-width: 400px;
+    margin: 50px auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #444;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #555;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.login-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #6e8efb;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-btn:hover {
+    background-color: #5a7df4;
+}
+
+/* Upload Form */
+.upload-container {
+    max-width: 500px;
+    margin: 30px auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.upload-container h2 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #444;
+}
+/* Base Responsive Styles */
+@media (max-width: 768px) {
+    .media-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
+    
+    .thumbnail {
+        height: 120px;
+    }
+    
+    .hero h1 {
+        font-size: 2rem;
+    }
+    
+    .main-nav {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .main-nav a {
+        margin: 5px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .media-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .media-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Header and Navigation */
+.main-header {
+    background-color: #6e8efb;
+    padding: 15px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.main-nav {
+    display: flex;
+    justify-content: flex-end;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.main-nav a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.main-nav a i {
+    margin-right: 5px;
+}
+
+/* Improved Thumbnail Styles */
+.thumbnail {
+    height: 180px;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+}
+
+.thumbnail::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1);
+    transition: background 0.3s;
+}
+
+.thumbnail:hover::after {
+    background: rgba(0,0,0,0.3);
+}
+
+.thumbnail.audio::before {
+    content: '\f001'; /* music icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: white;
+    z-index: 1;
+}
+
+.thumbnail.video::before {
+    content: '\f04b'; /* play icon */
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: white;
+    z-index: 1;
+}
+
+/* Media Item Hover Effects */
+.media-item:hover .thumbnail::after {
+    background: rgba(0,0,0,0.5);
+}
+
+.media-item:hover .thumbnail::before {
+    color: #6e8efb;
+}
+
+/* Audio/Video Controls */
+audio, video {
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 0 0 4px 4px;
+}
+
+/* Form Responsiveness */
+@media (max-width: 600px) {
+    .login-container, .upload-container {
+        width: 90%;
+        padding: 20px;
+    }
+}
+/* Video Thumbnail Styles */
+.video-thumbnail-container {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+}
+
+.video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.video-thumbnail-container:hover .video-thumbnail {
+    transform: scale(1.05);
+}
+
+.play-button-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    transition: background 0.3s;
+}
+
+.play-button-overlay i {
+    font-size: 3rem;
+    color: white;
+    opacity: 0.8;
+    transition: all 0.3s;
+}
+
+.video-thumbnail-container:hover .play-button-overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.video-thumbnail-container:hover .play-button-overlay i {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.video-player {
+    width: 100%;
+    margin-top: 10px;
+    border-radius: 0 0 4px 4px;
+}

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="gallery-header">
+    <h2>Media Gallery</h2>
+    {% if session.logged_in %}
+        <a href="{{ url_for('upload') }}" class="upload-btn">
+            <i class="fas fa-upload"></i> Upload New
+        </a>
+    {% endif %}
+</div>
+
+<div class="media-tabs">
+    <button class="tab-btn active" onclick="openTab('all')">
+        <i class="fas fa-th-large"></i> All Media
+    </button>
+    <button class="tab-btn" onclick="openTab('images')">
+        <i class="fas fa-image"></i> Photos
+    </button>
+    <button class="tab-btn" onclick="openTab('audio')">
+        <i class="fas fa-music"></i> Audio
+    </button>
+    <button class="tab-btn" onclick="openTab('videos')">
+        <i class="fas fa-video"></i> Videos
+    </button>
+</div>
+
+<div id="all" class="tab-content" style="display:block;">
+    {% if images or audio or videos %}
+    <div class="media-grid">
+        <!-- Images -->
+        {% for image in images %}
+        <div class="media-item image-item">
+            <div class="thumbnail" style="background-image: url('{{ url_for('static', filename='images/' + image['filename']) }}')"></div>
+            <div class="media-info">
+                <div class="media-type-badge photo-badge">
+                    <i class="fas fa-camera"></i> Photo
+                </div>
+                <div class="media-title">{{ image['filename'] }}</div>
+                <div class="media-date">{{ image['upload_date']|format_date }}</div>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Audio -->
+        {% for track in audio %}
+        <div class="media-item audio-item">
+            <div class="thumbnail audio"></div>
+            <div class="media-info">
+                <div class="media-type-badge audio-badge">
+                    <i class="fas fa-music"></i> Audio
+                </div>
+                <div class="media-title">{{ track['filename'] }}</div>
+                <div class="media-date">{{ track['upload_date']|format_date }}</div>
+                <audio controls>
+                    <source src="{{ url_for('static', filename='audio/' + track['filename']) }}" type="audio/mpeg">
+                </audio>
+            </div>
+        </div>
+        {% endfor %}
+        
+        <!-- Videos -->
+        {% for video in videos %}
+        <div class="media-item video-item">
+            <div class="thumbnail video"></div>
+            <div class="media-info">
+                <div class="media-type-badge video-badge">
+                    <i class="fas fa-video"></i> Video
+                </div>
+                <div class="media-title">{{ video['filename'] }}</div>
+                <div class="media-date">{{ video['upload_date']|format_date }}</div>
+                <video controls>
+                    <source src="{{ url_for('static', filename='videos/' + video['filename']) }}" type="video/mp4">
+                </video>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-media">
+        <i class="fas fa-folder-open"></i>
+        <p>No media available</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="images" class="tab-content">
+    {% if images %}
+    <div class="media-grid">
+        {% for image in images %}
+        <div class="media-item">
+            <div class="thumbnail" style="background-image: url('{{ url_for('static', filename='images/' + image['filename']) }}')"></div>
+            <div class="media-info">
+                <div class="media-title">{{ image['filename'] }}</div>
+                <div class="media-date">{{ image['upload_date']|format_date }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-media">
+        <i class="fas fa-image"></i>
+        <p>No photos available</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="audio" class="tab-content">
+    {% if audio %}
+    <div class="media-grid">
+        {% for track in audio %}
+        <div class="media-item">
+            <div class="thumbnail audio"></div>
+            <div class="media-info">
+                <div class="media-title">{{ track['filename'] }}</div>
+                <div class="media-date">{{ track['upload_date']|format_date }}</div>
+                <audio controls>
+                    <source src="{{ url_for('static', filename='audio/' + track['filename']) }}" type="audio/mpeg">
+                </audio>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-media">
+        <i class="fas fa-music"></i>
+        <p>No audio tracks available</p>
+    </div>
+    {% endif %}
+</div>
+
+<div id="videos" class="tab-content">
+    {% if videos %}
+    <div class="media-grid">
+        {% for video in videos %}
+        <div class="media-item">
+            <div class="video-thumbnail-container">
+                <!-- Video thumbnail with first frame and play button -->
+                <video class="video-thumbnail" poster="{{ url_for('static', filename='videos/thumbs/' + video['filename'] + '.jpg') }}">
+                    <source src="{{ url_for('static', filename='videos/' + video['filename']) }}" type="video/mp4">
+                </video>
+                <div class="play-button-overlay">
+                    <i class="fas fa-play"></i>
+                </div>
+            </div>
+            <div class="media-info">
+                <div class="media-title">{{ video['filename'] }}</div>
+                <div class="media-date">{{ video['upload_date']|format_date }}</div>
+                <!-- Actual video player (hidden until clicked) -->
+                <video controls class="video-player" style="display: none;">
+                    <source src="{{ url_for('static', filename='videos/' + video['filename']) }}" type="video/mp4">
+                </video>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-media">
+        <i class="fas fa-video"></i>
+        <p>No videos available</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function openTab(tabName) {
+    var i, tabcontent, tabbuttons;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+    }
+    tabbuttons = document.getElementsByClassName("tab-btn");
+    for (i = 0; i < tabbuttons.length; i++) {
+        tabbuttons[i].className = tabbuttons[i].className.replace(" active", "");
+    }
+    document.getElementById(tabName).style.display = "block";
+    event.currentTarget.className += " active";
+}
+// Video thumbnail click handler
+document.querySelectorAll('.video-thumbnail-container').forEach(container => {
+    container.addEventListener('click', function() {
+        const videoPlayer = this.closest('.media-item').querySelector('.video-player');
+        const thumbnail = this.querySelector('.video-thumbnail');
+        
+        // Hide thumbnail and show video player
+        this.style.display = 'none';
+        videoPlayer.style.display = 'block';
+        
+        // Play the video
+        videoPlayer.play();
+    });
+});
+</script>
+{% endblock %}
