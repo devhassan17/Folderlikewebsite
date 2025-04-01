@@ -825,3 +825,135 @@ audio, video {
     width: 180px;
     height: 180px;
 }
+/* iOS 17 Theme */
+.ios-home-screen {
+    position: relative;
+    height: 100vh;
+    margin: 0 auto;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+
+.ios-wallpaper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #6e8efb, #a777e3);
+    z-index: -1;
+}
+
+/* Widgets */
+.ios-widgets {
+    padding: 60px 20px 20px;
+    color: white;
+    text-align: left;
+}
+
+.time-widget .time {
+    font-size: 3.5rem;
+    font-weight: 300;
+}
+
+.time-widget .date {
+    font-size: 1.2rem;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.weather-widget {
+    margin-top: 15px;
+    display: flex;
+    align-items: center;
+    font-size: 1.5rem;
+}
+
+.weather-widget i {
+    margin-right: 10px;
+}
+
+/* App Grid */
+.app-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.app-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.app-icon-inner {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: white;
+    margin-bottom: 5px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.app-icon span {
+    font-size: 0.7rem;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.media-icon { background: linear-gradient(135deg, #FF5E5B, #FF2D55); }
+.phone-icon { background: linear-gradient(135deg, #4CD964, #2ECC71); }
+.messages-icon { background: linear-gradient(135deg, #007AFF, #34AADC); }
+.safari-icon { background: linear-gradient(135deg, #5856D6, #AF52DE); }
+.music-icon { background: linear-gradient(135deg, #FF2D55, #FF375F); }
+
+.app-icon:hover {
+    transform: scale(1.05);
+}
+
+/* Dock */
+.ios-dock {
+    position: fixed;
+    bottom: 20px;
+    width: auto;
+    left: 20px;
+    right: 20px;
+    background: rgba(255,255,255,0.3);
+    backdrop-filter: blur(20px);
+    border-radius: 30px;
+    padding: 10px;
+    display: flex;
+    justify-content: space-around;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.dock-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.dock-icon:hover {
+    transform: scale(1.1);
+}
+
+.dock-icon .app-icon-inner {
+    width: 50px;
+    height: 50px;
+    margin: 0;
+    font-size: 1.5rem;
+}
+

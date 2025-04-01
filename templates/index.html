@@ -1,51 +1,73 @@
-{% extends "base.html" %}
-
-{% block content %}
-<div class="app-container">
-    <div class="app-header">
-        <h1>Welcome to My Music</h1>
-        <p>Tap the folder to explore media</p>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Singer Portfolio</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    </head>
+    <body>
+<div class="ios-home-screen">
+    <!-- iOS 17 Wallpaper Background -->
+    <div class="ios-wallpaper"></div>
+    
+    <!-- Lock Screen Widgets -->
+    <div class="ios-widgets">
+        <div class="time-widget">
+            <div class="time">{{ current_time }}</div>
+            <div class="date">{{ current_date }}</div>
+        </div>
+        <div class="weather-widget">
+            <i class="fas fa-sun"></i>
+            <span>28°</span>
+        </div>
     </div>
-
-    <div class="ios-folder-container">
-        <!-- iOS Folder Icon -->
-        <div class="ios-folder" onclick="window.location='{{ url_for('gallery') }}'">
-            <div class="ios-folder-icon">
-                <div class="ios-folder-tab"></div>
-                <div class="ios-folder-body">
-                    <div class="ios-folder-items">
-                        <div class="ios-folder-item photo"></div>
-                        <div class="ios-folder-item video"></div>
-                        <div class="ios-folder-item audio"></div>
-                    </div>
-                </div>
+    
+    <!-- App Icons -->
+    <div class="app-grid">
+        <!-- Media Folder Icon -->
+        <div class="app-icon" onclick="window.location='{{ url_for('gallery') }}'">
+            <div class="app-icon-inner media-icon">
+                <i class="fas fa-folder"></i>
             </div>
-            <span class="ios-folder-label">Media Gallery</span>
+            <span>Media</span>
         </div>
-
-        <!-- Download App Button (visible on mobile) -->
-        <div class="download-app-mobile">
-            <a href="{{ url_for('download') }}" class="download-btn">
-                <i class="fas fa-download"></i> Get the App
-            </a>
+        
+    
+    <!-- Dock -->
+    <div class="ios-dock">
+        <div class="dock-icon dummy">
+            <div class="app-icon-inner phone-icon">
+                <i class="fas fa-phone"></i>
+            </div>
         </div>
-    </div>
-
-    <div class="admin-actions">
-        {% if not session.logged_in %}
-            <a href="{{ url_for('login') }}" class="admin-link">Admin Login</a>
-        {% else %}
-            <a href="{{ url_for('upload') }}" class="admin-link">Upload Media</a>
-            <a href="{{ url_for('logout') }}" class="admin-link">Logout</a>
-        {% endif %}
-    </div>
-
-    <!-- Download App Section (visible on desktop) -->
-    <div class="download-app-desktop">
-        <p>Enjoy on the go!</p>
-        <a href="{{ url_for('download') }}" class="download-btn">
-            <i class="fas fa-download"></i> Download Mobile App
-        </a>
+        <div class="dock-icon dummy">
+            <div class="app-icon-inner messages-icon">
+                <i class="fas fa-comment-alt"></i>
+            </div>
+        </div>
+        <div class="dock-icon" onclick="window.location='{{ url_for('gallery') }}'">
+            <div class="app-icon-inner media-icon">
+                <i class="fas fa-folder"></i>
+            </div>
+        </div>
+        <div class="dock-icon dummy">
+            <div class="app-icon-inner safari-icon">
+                <i class="fas fa-globe"></i>
+            </div>
+        </div>
     </div>
 </div>
-{% endblock %}
+
+<script>
+// Update time and date
+function updateTime() {
+    const now = new Date();
+    document.querySelector('.time').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.querySelector('.date').textContent = now.toLocaleDateString([], {weekday: 'long', month: 'long', day: 'numeric'});
+}
+
+updateTime();
+setInterval(updateTime, 60000);
+</script>
+</body>
