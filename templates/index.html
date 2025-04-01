@@ -4,6 +4,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Singer Portfolio</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+        <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     </head>
     <body>
@@ -32,11 +33,14 @@
         </div>
     </div>
 
-    <!-- iOS 17 Wallpaper Background -->
-    <div class="ios-wallpaper"> 
-        <img class="wallpaper" src="static/Ios wallpaper-2.jpg"></img>
+    <!-- iOS Wallpaper Background with Overlay -->
+    <div class="ios-wallpaper-container">
+        <img class="wallpaper" src="static/ios Wallpaper.jpeg" alt="iOS Wallpaper">
+        <div class="wallpaper-overlay"></div>
     </div>
+    
     <div class="spacer"></div>
+    
     <!-- App Icons -->
     <div class="app-grid">
         <!-- Media Folder Icon -->
@@ -44,26 +48,25 @@
             <div class="app-icon-inner media-icon">
                 <i class="fas fa-folder"></i>
             </div>
-            <span>Media</span>
+            <span class="Icon-text-folder"> Media</span>
         </div>
     </div>
     
     <!-- Dock -->
     <div class="ios-dock">
         <div class="dock-icon">
-            <img src="static/pngwing.com (5).png" alt="Messages">
+            <img src="static/icons8-instagram-400.png" alt="Instagram">
         </div>
+        
         <div class="dock-icon">
-            <img src="static/Phone.png" alt="Phone">
+            <img src="static/Screenshot 2025-04-01 at 2.59.38 PM.png" alt="Phone">
         </div>
-        <div class="dock-icon" onclick="window.location='{{ url_for('gallery') }}'">
-            <div class="app-icon-inner media-icon">
-                <i class="fas fa-folder"></i>
-            </div>
-        </div>
+        
         <div class="dock-icon">
-            <img src="static/Safari.png" alt="Safari">
+            <img src="static/pngwing.com (7).png" alt="TikTok">
         </div>
+        
+       
     </div>
 </div>
 
@@ -75,8 +78,6 @@ function updateTime() {
     document.querySelectorAll('.time').forEach(el => {
         el.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     });
-    // Update date widget
-    document.querySelector('.date').textContent = now.toLocaleDateString([], {weekday: 'long', day: 'numeric', month: 'long'});
     
     // Update battery level randomly for demo
     const batteryLevel = document.querySelector('.battery-level');
@@ -85,11 +86,10 @@ function updateTime() {
     batteryLevel.style.backgroundColor = randomLevel > 20 ? '#fff' : '#ff453a';
 }
 
-// Set initial time to match your screenshot
+// Set initial time
 document.querySelectorAll('.time').forEach(el => {
     el.textContent = '14:16';
 });
-document.querySelector('.date').textContent = 'Tuesday 1 April';
 
 // Update time every minute
 setInterval(updateTime, 60000);

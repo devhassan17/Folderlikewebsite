@@ -825,15 +825,6 @@ audio, video {
     width: 180px;
     height: 180px;
 }
-/* Dock Icon Images */
-.dock-icon img {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    object-fit: cover;
-}
-
-/* Rest of your existing CSS remains the same */
 /* iOS Status Bar */
 .ios-status-bar {
     position: fixed;
@@ -861,7 +852,6 @@ audio, video {
     gap: 5px;
 }
 
-/* Rest of your CSS remains the same */
 .signal {
     display: flex;
     align-items: flex-end;
@@ -912,42 +902,31 @@ audio, video {
     margin-left: 3px;
 }
 
-/* ... rest of your existing CSS ... */
-
-.ios-home-screen {
-    position: relative;
-    height: 100vh;
-    margin: 0 auto;
-    overflow: hidden;
-    box-shadow: 0 0 20px rgba(0,0,0,0.2);
-}
-
-.ios-wallpaper {
+/* Wallpaper with Left-Aligned Centered Positioning */
+.ios-wallpaper-container {
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: linear-gradient(135deg, #6e8efb, #a777e3);
     z-index: -1;
+    overflow: hidden;
 }
 
-/* Widgets */
-.ios-widgets {
-    padding: 60px 20px 20px;
-    color: white;
-    text-align: left;
+.wallpaper {
+    width: 100%;  /* Changed from 100% to auto */
+    height: 100%;
+    object-fit: cover;
+    object-position: left center;  /* This makes it left-aligned and vertically centered */
 }
 
-.time-widget .time {
-    font-size: 3.5rem;
-    font-weight: 300;
-}
-
-.time-widget .date {
-    font-size: 1.2rem;
-    font-weight: 500;
-    opacity: 0.8;
+.wallpaper-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.3);  /* 30% opacity black overlay */
 }
 
 /* App Grid */
@@ -987,10 +966,6 @@ audio, video {
 }
 
 .media-icon { background: linear-gradient(135deg, #FF5E5B, #FF2D55); }
-.phone-icon { background: linear-gradient(135deg, #4CD964, #2ECC71); }
-.messages-icon { background: linear-gradient(135deg, #007AFF, #34AADC); }
-.safari-icon { background: linear-gradient(135deg, #5856D6, #AF52DE); }
-.music-icon { background: linear-gradient(135deg, #FF2D55, #FF375F); }
 
 .app-icon:hover {
     transform: scale(1.05);
@@ -1023,6 +998,13 @@ audio, video {
     transition: transform 0.2s;
 }
 
+.dock-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
 .dock-icon:hover {
     transform: scale(1.1);
 }
@@ -1033,13 +1015,16 @@ audio, video {
     margin: 0;
     font-size: 1.5rem;
 }
-
-.wallpaper{
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
+.spacer {
+    height: 70px;
 }
-.spacer{
-    height: 100px;
+
+.ios-home-screen {
+    position: relative;
+    height: 100vh;
+    margin: 0 auto;
+    overflow: hidden;
+}
+.Icon-text-folder {
+    font-family: 'Montserrat', sans-serif;
 }
