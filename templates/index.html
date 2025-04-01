@@ -15,19 +15,12 @@
             <div class="time">14:16</div>
         </div>
         <div class="status-icons">
-            <div class="signal">
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-                <span class="bar"></span>
-            </div>
-            <div class="wifi">
-                <i class="fas fa-wifi"></i>
-            </div>
+          
+            
             <div class="battery">
-                <div class="battery-level"></div>
+                
                 <div class="battery-icon">
-                    <i class="fas fa-bolt"></i>
+                   
                 </div>
             </div>
         </div>
@@ -53,7 +46,7 @@
 
     <!-- Add this logo section -->
     <div class="logo-container">
-        <img src="static/logo.png" alt="TRTF" class="centered-logo">
+        <img src="static/trtl_final-removebg-preview.png" alt="TRTF" class="centered-logo">
     </div>
     
     <!-- Dock -->
@@ -70,7 +63,7 @@
         </div>
         <div class="dock-icon">
             <a href="https://open.spotify.com/artist/5hl4Ds8m0VaToEbZOQDE32?si=xvLny52GRK-u8cpnC9BfQw" target="_blank">
-                <img src="static/WhatsApp Image 2025-04-01 at 20.48.03.jpeg" alt="Spotify">
+                <img src="static/SPOTIFY .png" alt="Spotify">
             </a>
         </div>
         <div class="dock-icon">
@@ -111,8 +104,8 @@
                 </div>
                 <div class="popup-icons">
                 <!-- Tabs will be populated by JavaScript -->
-                <div id="popup-all" class="popup-tab-content" style="display:block;"></div>
-                <div id="popup-images" class="popup-tab-content"></div>
+                <div id="popup-all" class="popup-tab-content"></div>
+                <div id="popup-images" class="popup-tab-content" style="display:block;"></div>
                 <div id="popup-videos" class="popup-tab-content"></div>
                 <div id="popup-audio" class="popup-tab-content"></div>
                 <div id="popup-documents" class="popup-tab-content"></div>
@@ -128,374 +121,527 @@
             <div class="viewer-body" id="viewerBody"></div>
         </div>
     </div>
-    
-<script>
-// Global media data cache
-let mediaData = {
-    images: [],
-    videos: [],
-    audio: [],
-    documents: []
-};
-
-// Track if popup is already open
-let popupOpen = false;
-
-// Fetch media data from API
-async function fetchMediaData() {
-    try {
-        console.log("Fetching media data...");
-        const response = await fetch('/api/media');
+    <script>
+        // Global media data cache
+        let mediaData = {
+            images: [],
+            videos: [],
+            audio: [],
+            documents: []
+        };
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // Track if popup is already open
+        let popupOpen = false;
+        
+        // Fetch media data from API
+        async function fetchMediaData() {
+            try {
+                console.log("Fetching media data...");
+                const response = await fetch('/api/media');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                console.log("API Response:", result);
+                
+                if (result.success && result.data) {
+                    // Clear existing data
+                    mediaData.images = [];
+                    mediaData.videos = [];
+                    mediaData.audio = [];
+                    mediaData.documents = [];
+                    
+                    // Organize data by type
+                    const uniqueItems = removeDuplicates(result.data);
+                    
+                    uniqueItems.forEach(item => {
+                        // Ensure filepath starts with /static/
+                        let filepath = item.filepath;
+                        if (!filepath.startsWith('/static/')) {
+                            filepath = '/static/' + (filepath.startsWith('/') ? filepath.substring(1) : filepath);
+                        }
+                        item.filepath = filepath;
+                        
+                        if (item.media_type === 'images') {
+                            mediaData.images.push(item);
+                        } else if (item.media_type === 'videos') {
+                            // Ensure thumbnail path is correct
+                            if (item.thumbnail) {
+                                let thumbPath = item.thumbnail;
+                                if (!thumbPath.startsWith('/static/')) {
+                                    thumbPath = '/static/' + (thumbPath.startsWith('/') ? thumbPath.substring(1) : thumbPath);
+                                }
+                                item.thumbnail = thumbPath;
+                            }
+                            mediaData.videos.push(item);
+                        } else if (item.media_type === 'audio') {
+                            mediaData.audio.push(item);
+                        } else if (item.media_type === 'documents') {
+                            mediaData.documents.push(item);
+                        }
+                    });
+                    
+                    console.log("Processed media data:", mediaData);
+                    return true;
+                } else {
+                    console.error("API Error:", result.error);
+                    return false;
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                return false;
+            }
         }
         
-        const result = await response.json();
-        console.log("API Response:", result);
-        
-        if (result.success && result.data) {
-            // Clear existing data
-            mediaData.images = [];
-            mediaData.videos = [];
-            mediaData.audio = [];
-            mediaData.documents = [];
+        function removeDuplicates(items) {
+            const unique = [];
+            const seen = new Set();
             
-            // Organize data by type
-            result.data.forEach(item => {
-                // Ensure filepath starts with /static/
-                let filepath = item.filepath;
-                if (!filepath.startsWith('/static/')) {
-                    filepath = '/static/' + (filepath.startsWith('/') ? filepath.substring(1) : filepath);
+            for (const item of items) {
+                const identifier = `${item.filepath}-${item.filename}`;
+                if (!seen.has(identifier)) {
+                    seen.add(identifier);
+                    unique.push(item);
                 }
-                item.filepath = filepath;
-                
-                if (item.media_type === 'images') {
-                    mediaData.images.push(item);
-                } else if (item.media_type === 'videos') {
-                    // Ensure thumbnail path is correct
-                    if (item.thumbnail) {
-                        let thumbPath = item.thumbnail;
-                        if (!thumbPath.startsWith('/static/')) {
-                            thumbPath = '/static/' + (thumbPath.startsWith('/') ? thumbPath.substring(1) : thumbPath);
-                        }
-                        item.thumbnail = thumbPath;
-                    }
-                    mediaData.videos.push(item);
-                } else if (item.media_type === 'audio') {
-                    mediaData.audio.push(item);
-                } else if (item.media_type === 'documents') {
-                    mediaData.documents.push(item);
+            }
+            
+            return unique;
+        }
+        
+        function renderMediaTab(tabName) {
+            const container = document.getElementById(`popup-${tabName}`);
+            if (!container) return;
+        
+            // Clear the container first
+            container.innerHTML = '';
+            
+            if (tabName === 'all') {
+                // Special rendering for All tab with categories
+                renderAllTabWithCategories(container);
+                return;
+            }
+            
+            let items = mediaData[tabName] || [];
+            
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="no-media">
+                        <i class="fas fa-folder-open"></i>
+                        <p>No ${tabName === 'all' ? 'media' : tabName} available</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const grid = document.createElement('div');
+            grid.className = tabName === 'documents' ? 'document-grid' : 'popup-media-grid';
+            
+            items.forEach(item => {
+                if (item.media_type === 'documents') {
+                    const ext = item.filename.split('.').pop().toLowerCase();
+                    let iconClass = 'fas fa-file';
+                    
+                    if (ext === 'pdf') iconClass = 'fas fa-file-pdf';
+                    else if (['doc', 'docx'].includes(ext)) iconClass = 'fas fa-file-word';
+                    else if (['xls', 'xlsx'].includes(ext)) iconClass = 'fas fa-file-excel';
+                    else if (['ppt', 'pptx'].includes(ext)) iconClass = 'fas fa-file-powerpoint';
+                    
+                    grid.innerHTML += `
+                        <div class="document-item" onclick="window.open('${item.filepath}', '_blank')">
+                            <i class="${iconClass}"></i>
+                            <span>${item.filename}</span>
+                        </div>
+                    `;
+                } 
+                else if (item.media_type === 'images') {
+                    grid.innerHTML += `
+                        <div class="popup-media-item" onclick="openMediaViewer('${item.filepath}', 'image')">
+                            <img src="${item.filepath}" alt="${item.filename}" loading="lazy">
+                            <div class="media-info">
+                                <span>${item.filename}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (item.media_type === 'videos') {
+                    grid.innerHTML += `
+                        <div class="popup-media-item" onclick="openMediaViewer('${item.filepath}', 'video')">
+                            <div class="video-thumbnail-container">
+                                ${item.thumbnail ? 
+                                    `<img src="${item.thumbnail}" alt="${item.filename}" loading="lazy">` : 
+                                    `<div class="video-placeholder"><i class="fas fa-video"></i></div>`
+                                }
+                                <div class="play-icon">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                            <div class="media-info">
+                                <span>${item.filename}</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                else if (item.media_type === 'audio') {
+                    grid.innerHTML += `
+                        <div class="popup-media-item" onclick="openMediaViewer('${item.filepath}', 'audio')">
+                            <div class="audio-thumbnail-container">
+                                <div class="audio-icon">
+                                    <i class="fas fa-volume-up"></i>
+                                </div>
+                            </div>
+                            <div class="media-info">
+                                <span>${item.filename}</span>
+                            </div>
+                        </div>
+                    `;
                 }
             });
             
-            console.log("Processed media data:", mediaData);
-            return true;
-        } else {
-            console.error("API Error:", result.error);
-            return false;
+            container.appendChild(grid);
         }
-    } catch (error) {
-        console.error("Fetch Error:", error);
-        return false;
-    }
-}
-
-/// Replace your existing renderMediaTab function with this:
-function renderMediaTab(tabName) {
-    const container = document.getElementById(`popup-${tabName}`);
-    if (!container) return;
-
-    container.innerHTML = '';
-    
-    let items = [];
-    if (tabName === 'all') {
-        // Combine all media types but remove duplicates
-        const allItems = [...mediaData.images, ...mediaData.videos, ...mediaData.audio, ...mediaData.documents];
-        items = removeDuplicates(allItems);
-    } else {
-        items = removeDuplicates(mediaData[tabName] || []);
-    }
-    
-    if (items.length === 0) {
-        container.innerHTML = `
-            <div class="no-media">
-                <i class="fas fa-folder-open"></i>
-                <p>No ${tabName === 'all' ? 'media' : tabName} available</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const grid = document.createElement('div');
-    grid.className = tabName === 'documents' ? 'document-grid' : 'popup-media-grid';
-    
-    items.forEach(item => {
-        if (item.media_type === 'documents') {
-            const ext = item.filename.split('.').pop().toLowerCase();
-            let iconClass = 'fas fa-file';
-            
-            if (ext === 'pdf') iconClass = 'fas fa-file-pdf';
-            else if (['doc', 'docx'].includes(ext)) iconClass = 'fas fa-file-word';
-            else if (['xls', 'xlsx'].includes(ext)) iconClass = 'fas fa-file-excel';
-            else if (['ppt', 'pptx'].includes(ext)) iconClass = 'fas fa-file-powerpoint';
-            
-            grid.innerHTML += `
-                <div class="document-item" onclick="window.open('${item.filepath}', '_blank')">
-                    <i class="${iconClass}"></i>
-                    <span>${item.filename}</span>
-                </div>
-            `;
-        } 
-        else if (item.media_type === 'images') {
-            grid.innerHTML += `
-                <div class="popup-media-item" onclick="openFullscreenViewer('${item.filepath}', 'image')">
-                    <img src="${item.filepath}" alt="${item.filename}" loading="lazy">
-                    <div class="media-info">
-                        <span>${item.filename}</span>
-                    </div>
-                </div>
-            `;
-        }
-        else if (item.media_type === 'videos') {
-            const thumbContent = item.thumbnail ? 
-                `<img src="${item.thumbnail}" alt="${item.filename}" loading="lazy">` :
-                `<div class="video-placeholder"><i class="fas fa-video"></i></div>`;
-            
-            grid.innerHTML += `
-                <div class="popup-media-item" onclick="openFullscreenViewer('${item.filepath}', 'video')">
-                    ${thumbContent}
-                    <div class="play-icon">
-                        <i class="fas fa-play"></i>
-                    </div>
-                    <div class="media-info">
-                        <span>${item.filename}</span>
-                    </div>
-                </div>
-            `;
-        }
-        else if (item.media_type === 'audio') {
-            grid.innerHTML += `
-                <div class="popup-media-item" onclick="openFullscreenViewer('${item.filepath}', 'audio')">
-                    <div class="audio-placeholder">
-                        <i class="fas fa-music"></i>
-                    </div>
-                    <div class="media-info">
-                        <span>${item.filename}</span>
-                    </div>
-                </div>
-            `;
-        }
-    });
-    
-    container.appendChild(grid);
-}
-
-// Add this function to remove duplicates
-function removeDuplicates(items) {
-    const unique = [];
-    const seen = new Set();
-    
-    for (const item of items) {
-        const identifier = `${item.filepath}-${item.filename}`;
-        if (!seen.has(identifier)) {
-            seen.add(identifier);
-            unique.push(item);
-        }
-    }
-    
-    return unique;
-}
-
-// Replace your media viewer functions with this:
-function openFullscreenViewer(filepath, mediaType) {
-    const viewer = document.createElement('div');
-    viewer.className = 'fullscreen-viewer';
-    viewer.innerHTML = `
-        <div class="viewer-content">
-            <button class="close-viewer" onclick="closeFullscreenViewer()">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="viewer-media-container">
-                ${getMediaHTML(filepath, mediaType)}
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(viewer);
-    document.body.style.overflow = 'hidden';
-}
-
-function closeFullscreenViewer() {
-    const viewer = document.querySelector('.fullscreen-viewer');
-    if (viewer) {
-        // Pause any playing media
-        const media = viewer.querySelector('video, audio');
-        if (media) media.pause();
         
-        viewer.remove();
-        document.body.style.overflow = '';
-    }
-}
-
-function getMediaHTML(filepath, mediaType) {
-    switch(mediaType) {
-        case 'image':
-            return `<img src="${filepath}" class="viewer-media" alt="Fullscreen view">`;
-        case 'video':
-            return `
-                <video controls autoplay class="viewer-media">
-                    <source src="${filepath}" type="video/mp4">
-                    Your browser doesn't support HTML5 video.
-                </video>
-            `;
-        case 'audio':
-            return `
-                <audio controls autoplay class="viewer-media">
-                    <source src="${filepath}" type="audio/mpeg">
-                    Your browser doesn't support HTML5 audio.
-                </audio>
-            `;
-        default:
-            return `<p>Unsupported media type</p>`;
-    }
-}
-// Close media viewer
-function closeMediaViewer() {
-    const viewer = document.getElementById('mediaViewer');
-    const viewerBody = document.getElementById('viewerBody');
-    
-    // Pause any playing media
-    const mediaElements = viewerBody.querySelectorAll('video, audio');
-    mediaElements.forEach(media => {
-        media.pause();
-    });
-    
-    viewer.style.display = 'none';
-}
-
-// Open popup and load data
-async function openMediaPopup() {
-    if (popupOpen) return;
-    popupOpen = true;
-    
-    const popup = document.getElementById('mediaPopup');
-    popup.style.display = 'block';
-    
-    // Show loading state
-    document.querySelectorAll('.popup-tab-content').forEach(tab => {
-        tab.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading media...</div>';
-    });
-    
-    try {
-        // Fetch fresh data
-        const success = await fetchMediaData();
-        
-        if (success) {
-            // Render all tabs
-            renderMediaTab('all');
-            renderMediaTab('images');
-            renderMediaTab('videos');
-            renderMediaTab('audio');
-            renderMediaTab('documents');
+        function renderAllTabWithCategories(container) {
+            // Create a container for all categories
+            const allContainer = document.createElement('div');
+            allContainer.className = 'all-tab-container';
             
-            // Set first tab as active
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelector('.tab-btn').classList.add('active');
-        } else {
-            showErrorState();
+            // Photos Section
+            if (mediaData.images.length > 0) {
+                const photosSection = document.createElement('div');
+                photosSection.className = 'category-section';
+                photosSection.innerHTML = `
+                    <div class="category-title">
+                        <i class="fas fa-image"></i> Photos
+                    </div>
+                `;
+                
+                const photosGrid = document.createElement('div');
+                photosGrid.className = 'popup-media-grid';
+                
+                mediaData.images.forEach(item => {
+                    photosGrid.innerHTML += `
+                        <div class="popup-media-item" onclick="openMediaViewer('${item.filepath}', 'image')">
+                            <img src="${item.filepath}" alt="${item.filename}" loading="lazy">
+                            <div class="media-info">
+                                <span>${item.filename}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                photosSection.appendChild(photosGrid);
+                allContainer.appendChild(photosSection);
+            }
+            
+            // Videos Section
+            if (mediaData.videos.length > 0) {
+                const videosSection = document.createElement('div');
+                videosSection.className = 'category-section';
+                videosSection.innerHTML = `
+                    <div class="category-title">
+                        <i class="fas fa-video"></i> Videos
+                    </div>
+                `;
+                
+                const videosGrid = document.createElement('div');
+                videosGrid.className = 'popup-media-grid';
+                
+                mediaData.videos.forEach(item => {
+                    videosGrid.innerHTML += `
+                        <div class="popup-media-item" onclick="openMediaViewer('${item.filepath}', 'video')">
+                            <div class="video-thumbnail-container">
+                                ${item.thumbnail ? 
+                                    `<img src="${item.thumbnail}" alt="${item.filename}" loading="lazy">` : 
+                                    `<div class="video-placeholder"><i class="fas fa-video"></i></div>`
+                                }
+                                <div class="play-icon">
+                                    <i class="fas fa-play"></i>
+                                </div>
+                            </div>
+                            <div class="media-info">
+                                <span>${item.filename}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                videosSection.appendChild(videosGrid);
+                allContainer.appendChild(videosSection);
+            }
+            
+            // Audio Section
+            if (mediaData.audio.length > 0) {
+                const audioSection = document.createElement('div');
+                audioSection.className = 'category-section';
+                audioSection.innerHTML = `
+                    <div class="category-title">
+                        <i class="fas fa-volume-up"></i> Audio
+                    </div>
+                `;
+                
+                const audioGrid = document.createElement('div');
+                audioGrid.className = 'popup-media-grid';
+                
+                mediaData.audio.forEach(item => {
+                    audioGrid.innerHTML += `
+                        <div class="popup-media-item" onclick="openMediaViewer('${item.filepath}', 'audio')">
+                            <div class="audio-thumbnail-container">
+                                <div class="audio-icon">
+                                    <i class="fas fa-volume-up"></i>
+                                </div>
+                            </div>
+                            <div class="media-info">
+                                <span>${item.filename}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                audioSection.appendChild(audioGrid);
+                allContainer.appendChild(audioSection);
+            }
+            
+            // Documents Section
+            if (mediaData.documents.length > 0) {
+                const docsSection = document.createElement('div');
+                docsSection.className = 'category-section';
+                docsSection.innerHTML = `
+                    <div class="category-title">
+                        <i class="fas fa-file"></i> Documents
+                    </div>
+                `;
+                
+                const docsGrid = document.createElement('div');
+                docsGrid.className = 'document-grid';
+                
+                mediaData.documents.forEach(item => {
+                    const ext = item.filename.split('.').pop().toLowerCase();
+                    let iconClass = 'fas fa-file';
+                    
+                    if (ext === 'pdf') iconClass = 'fas fa-file-pdf';
+                    else if (['doc', 'docx'].includes(ext)) iconClass = 'fas fa-file-word';
+                    else if (['xls', 'xlsx'].includes(ext)) iconClass = 'fas fa-file-excel';
+                    else if (['ppt', 'pptx'].includes(ext)) iconClass = 'fas fa-file-powerpoint';
+                    
+                    docsGrid.innerHTML += `
+                        <div class="document-item" onclick="window.open('${item.filepath}', '_blank')">
+                            <i class="${iconClass}"></i>
+                            <span>${item.filename}</span>
+                        </div>
+                    `;
+                });
+                
+                docsSection.appendChild(docsGrid);
+                allContainer.appendChild(docsSection);
+            }
+            
+            // If no media at all
+            if (allContainer.children.length === 0) {
+                container.innerHTML = `
+                    <div class="no-media">
+                        <i class="fas fa-folder-open"></i>
+                        <p>No media available</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.appendChild(allContainer);
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showErrorState();
-    }
-}
-
-function showErrorState() {
-    document.querySelectorAll('.popup-tab-content').forEach(tab => {
-        tab.innerHTML = `
-            <div class="error">
-                <i class="fas fa-exclamation-circle"></i> 
-                Could not load media. Please try again.
-            </div>
-        `;
-    });
-}
-
-// Initialize event listeners
-document.addEventListener('DOMContentLoaded', function() {
-    // Media icon click
-    document.getElementById('mediaAppIcon').addEventListener('click', openMediaPopup);
-    
-    // Close popup button
-    document.querySelector('.close-popup').addEventListener('click', function() {
-        document.getElementById('mediaPopup').style.display = 'none';
-        popupOpen = false;
-    });
-    
-    // Close when clicking outside popup
-    document.getElementById('mediaPopup').addEventListener('click', function(e) {
-        if (e.target === this) {
-            this.style.display = 'none';
-            popupOpen = false;
+        
+        function openMediaViewer(filepath, mediaType) {
+            const viewer = document.getElementById('mediaViewer');
+            const viewerBody = document.getElementById('viewerBody');
+            
+            // Clear previous content
+            viewerBody.innerHTML = '';
+            
+            // Create close button at top
+            const closeBtn = document.createElement('div');
+            closeBtn.className = 'viewer-close-top';
+            closeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            closeBtn.onclick = closeMediaViewer;
+            
+            // Create media container
+            const mediaContainer = document.createElement('div');
+            mediaContainer.className = 'viewer-media-container';
+            
+            // Add media based on type
+            switch(mediaType) {
+                case 'image':
+                    mediaContainer.innerHTML = `<img src="${filepath}" class="viewer-media" alt="Fullscreen view">`;
+                    break;
+                case 'video':
+                    mediaContainer.innerHTML = `
+                        <video controls autoplay class="viewer-media">
+                            <source src="${filepath}" type="video/mp4">
+                            Your browser doesn't support HTML5 video.
+                        </video>
+                    `;
+                    break;
+                case 'audio':
+                    mediaContainer.innerHTML = `
+                        <div class="audio-viewer-container">
+                            <i class="fas fa-volume-up audio-viewer-icon"></i>
+                            <audio controls autoplay class="viewer-media">
+                                <source src="${filepath}" type="audio/mpeg">
+                                Your browser doesn't support HTML5 audio.
+                            </audio>
+                            <div class="audio-filename">${filepath.split('/').pop()}</div>
+                        </div>
+                    `;
+                    break;
+                default:
+                    mediaContainer.innerHTML = `<p>Unsupported media type</p>`;
+            }
+            
+            // Add elements to viewer
+            viewerBody.appendChild(closeBtn);
+            viewerBody.appendChild(mediaContainer);
+            
+            // Show viewer
+            viewer.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            
+            // Add click outside to close
+            viewer.onclick = function(e) {
+                if (e.target === viewer) {
+                    closeMediaViewer();
+                }
+            };
+            
+            // Add escape key to close
+            document.addEventListener('keydown', function escHandler(e) {
+                if (e.key === 'Escape') {
+                    closeMediaViewer();
+                    document.removeEventListener('keydown', escHandler);
+                }
+            });
         }
-    });
-    
-    // Tab switching
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const tabName = this.getAttribute('data-tab');
-            openPopupTab(tabName);
+        
+        function closeMediaViewer() {
+            const viewer = document.getElementById('mediaViewer');
+            const viewerBody = document.getElementById('viewerBody');
+            
+            // Pause any playing media
+            const mediaElements = viewerBody.querySelectorAll('video, audio');
+            mediaElements.forEach(media => {
+                media.pause();
+            });
+            
+            viewer.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        
+        async function openMediaPopup() {
+            if (popupOpen) return;
+            popupOpen = true;
+            
+            const popup = document.getElementById('mediaPopup');
+            popup.style.display = 'block';
+            
+            // Show loading state
+            document.querySelectorAll('.popup-tab-content').forEach(tab => {
+                tab.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Loading media...</div>';
+            });
+            
+            try {
+                // Fetch fresh data
+                const success = await fetchMediaData();
+                
+                if (success) {
+                    // Render all tabs
+                    renderMediaTab('all');
+                    renderMediaTab('images');
+                    renderMediaTab('videos');
+                    renderMediaTab('audio');
+                    renderMediaTab('documents');
+                    
+                    // CHANGE THIS - Set PHOTOS tab as active by default
+                    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                    document.querySelector('.tab-btn[data-tab="images"]').classList.add('active');
+                    openPopupTab('images'); // Also show the images tab content
+                } else {
+                    showErrorState();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showErrorState();
+            }
+        }
+        
+        function showErrorState() {
+            document.querySelectorAll('.popup-tab-content').forEach(tab => {
+                tab.innerHTML = `
+                    <div class="error">
+                        <i class="fas fa-exclamation-circle"></i> 
+                        Could not load media. Please try again.
+                    </div>
+                `;
+            });
+        }
+        
+        function openPopupTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.popup-tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            
+            // Remove active class from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab and mark button as active
+            document.getElementById(`popup-${tabName}`).style.display = 'block';
+            document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
+        }
+        
+        function updateTime() {
+            const now = new Date();
+            document.querySelectorAll('.time').forEach(el => {
+                el.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            });
+            
+            const batteryLevel = document.querySelector('.battery-level');
+            const randomLevel = Math.floor(Math.random() * 100);
+            batteryLevel.style.width = `${randomLevel}%`;
+            batteryLevel.style.backgroundColor = randomLevel > 20 ? '#fff' : '#ff453a';
+        }
+        
+        // Initialize event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Media icon click
+            document.getElementById('mediaAppIcon').addEventListener('click', openMediaPopup);
+            
+            // Close popup button
+            document.querySelector('.close-popup').addEventListener('click', function() {
+                document.getElementById('mediaPopup').style.display = 'none';
+                popupOpen = false;
+            });
+            
+            // Close when clicking outside popup
+            document.getElementById('mediaPopup').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    this.style.display = 'none';
+                    popupOpen = false;
+                }
+            });
+            
+            // Tab switching
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabName = this.getAttribute('data-tab');
+                    openPopupTab(tabName);
+                });
+            });
+            
+            // Initialize time
+            updateTime();
+            setInterval(updateTime, 60000);
         });
-    });
-    
-    // Media viewer close button
-    document.querySelector('.close-viewer').addEventListener('click', closeMediaViewer);
-    
-    // Close media viewer when clicking outside
-    document.getElementById('mediaViewer').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeMediaViewer();
-        }
-    });
-});
-
-// Tab switching function
-function openPopupTab(tabName) {
-    // Hide all tab contents
-    document.querySelectorAll('.popup-tab-content').forEach(tab => {
-        tab.style.display = 'none';
-    });
-    
-    // Remove active class from all buttons
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Show selected tab and mark button as active
-    document.getElementById(`popup-${tabName}`).style.display = 'block';
-    document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
-}
-
-// Update time and battery functions
-function updateTime() {
-    const now = new Date();
-    document.querySelectorAll('.time').forEach(el => {
-        el.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    });
-    
-    const batteryLevel = document.querySelector('.battery-level');
-    const randomLevel = Math.floor(Math.random() * 100);
-    batteryLevel.style.width = `${randomLevel}%`;
-    batteryLevel.style.backgroundColor = randomLevel > 20 ? '#fff' : '#ff453a';
-}
-
-// Initialize time
-document.querySelectorAll('.time').forEach(el => {
-    el.textContent = '14:16';
-});
-document.querySelector('.battery-level').style.width = '80%';
-setInterval(updateTime, 60000);
-</script>
+        </script>
 </body>
 </html>
