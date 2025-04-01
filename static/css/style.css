@@ -1089,6 +1089,11 @@ audio, video {
     border-bottom: 1px solid #eee;
 }
 
+.media-tabs{
+    display: flex;
+    flex-direction: row;
+}
+
 .popup-header h3 {
     margin: 0;
     font-size: 18px;
