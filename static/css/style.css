@@ -1017,7 +1017,7 @@ audio, video {
     font-size: 1.5rem;
 }
 .spacer {
-    height: 70px;
+    height: 50px;
 }
 
 .ios-home-screen {
@@ -1034,7 +1034,7 @@ audio, video {
 .logo-container {
     position: absolute;
     position: fixed;
-    top: 30%;
+    top: 40%;
     left: 50%;
     transform: translate(-50%, -50%);
     width: 100%;
