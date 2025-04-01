@@ -8,23 +8,35 @@
     </head>
     <body>
 <div class="ios-home-screen">
+    <!-- iOS Status Bar -->
+    <div class="ios-status-bar">
+        <div class="time-container">
+            <div class="time">14:16</div>
+        </div>
+        <div class="status-icons">
+            <div class="signal">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+            <div class="wifi">
+                <i class="fas fa-wifi"></i>
+            </div>
+            <div class="battery">
+                <div class="battery-level"></div>
+                <div class="battery-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- iOS 17 Wallpaper Background -->
     <div class="ios-wallpaper"> 
         <img class="wallpaper" src="static/Ios wallpaper-2.jpg"></img>
     </div>
-    
-    <!-- Lock Screen Widgets -->
-    <div class="ios-widgets">
-        <div class="time-widget">
-            <div class="time">{{ current_time }}</div>
-            <div class="date">{{ current_date }}</div>
-        </div>
-        <div class="weather-widget">
-            <i class="fas fa-sun"></i>
-            <span>28°</span>
-        </div>
-    </div>
-    
+    <div class="spacer"></div>
     <!-- App Icons -->
     <div class="app-grid">
         <!-- Media Folder Icon -->
@@ -34,29 +46,23 @@
             </div>
             <span>Media</span>
         </div>
-        
+    </div>
     
     <!-- Dock -->
     <div class="ios-dock">
-        <div class="dock-icon dummy">
-            <div class="app-icon-inner phone-icon">
-                <i class="fas fa-phone"></i>
-            </div>
+        <div class="dock-icon">
+            <img src="static/pngwing.com (5).png" alt="Messages">
         </div>
-        <div class="dock-icon dummy">
-            <div class="app-icon-inner messages-icon">
-                <i class="fas fa-comment-alt"></i>
-            </div>
+        <div class="dock-icon">
+            <img src="static/Phone.png" alt="Phone">
         </div>
         <div class="dock-icon" onclick="window.location='{{ url_for('gallery') }}'">
             <div class="app-icon-inner media-icon">
                 <i class="fas fa-folder"></i>
             </div>
         </div>
-        <div class="dock-icon dummy">
-            <div class="app-icon-inner safari-icon">
-                <i class="fas fa-globe"></i>
-            </div>
+        <div class="dock-icon">
+            <img src="static/Safari.png" alt="Safari">
         </div>
     </div>
 </div>
@@ -65,11 +71,31 @@
 // Update time and date
 function updateTime() {
     const now = new Date();
-    document.querySelector('.time').textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-    document.querySelector('.date').textContent = now.toLocaleDateString([], {weekday: 'long', month: 'long', day: 'numeric'});
+    // Update status bar time
+    document.querySelectorAll('.time').forEach(el => {
+        el.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    });
+    // Update date widget
+    document.querySelector('.date').textContent = now.toLocaleDateString([], {weekday: 'long', day: 'numeric', month: 'long'});
+    
+    // Update battery level randomly for demo
+    const batteryLevel = document.querySelector('.battery-level');
+    const randomLevel = Math.floor(Math.random() * 100);
+    batteryLevel.style.width = `${randomLevel}%`;
+    batteryLevel.style.backgroundColor = randomLevel > 20 ? '#fff' : '#ff453a';
 }
 
-updateTime();
+// Set initial time to match your screenshot
+document.querySelectorAll('.time').forEach(el => {
+    el.textContent = '14:16';
+});
+document.querySelector('.date').textContent = 'Tuesday 1 April';
+
+// Update time every minute
 setInterval(updateTime, 60000);
+
+// Initial battery level
+document.querySelector('.battery-level').style.width = '80%';
 </script>
 </body>
+</html>

@@ -825,7 +825,95 @@ audio, video {
     width: 180px;
     height: 180px;
 }
-/* iOS 17 Theme */
+/* Dock Icon Images */
+.dock-icon img {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
+/* Rest of your existing CSS remains the same */
+/* iOS Status Bar */
+.ios-status-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 44px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    z-index: 100;
+    padding: 0 20px;
+}
+
+.time-container {
+    flex: 1;
+}
+
+.status-icons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Rest of your CSS remains the same */
+.signal {
+    display: flex;
+    align-items: flex-end;
+    height: 14px;
+    gap: 2px;
+}
+
+.signal .bar {
+    width: 3px;
+    background: white;
+    border-radius: 2px;
+}
+
+.signal .bar:nth-child(1) { height: 5px; }
+.signal .bar:nth-child(2) { height: 8px; }
+.signal .bar:nth-child(3) { height: 11px; }
+.signal .bar:nth-child(4) { height: 14px; }
+
+.wifi i {
+    font-size: 14px;
+}
+
+.battery {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.battery-level {
+    width: 22px;
+    height: 10px;
+    border: 1px solid white;
+    border-radius: 2px;
+    padding: 1px;
+}
+
+.battery-level::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 80%;
+    background: white;
+    border-radius: 1px;
+}
+
+.battery-icon i {
+    font-size: 10px;
+    margin-left: 3px;
+}
+
+/* ... rest of your existing CSS ... */
+
 .ios-home-screen {
     position: relative;
     height: 100vh;
@@ -860,17 +948,6 @@ audio, video {
     font-size: 1.2rem;
     font-weight: 500;
     opacity: 0.8;
-}
-
-.weather-widget {
-    margin-top: 15px;
-    display: flex;
-    align-items: center;
-    font-size: 1.5rem;
-}
-
-.weather-widget i {
-    margin-right: 10px;
 }
 
 /* App Grid */
@@ -962,4 +1039,7 @@ audio, video {
     height: 100%;
     margin: 0;
     padding: 0;
+}
+.spacer{
+    height: 100px;
 }
