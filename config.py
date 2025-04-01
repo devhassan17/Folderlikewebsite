@@ -1,5 +1,7 @@
 import os
 
+STATIC_FOLDER = 'static'
+
 class Config:
     SECRET_KEY = 'your-secret-key-here'
     ADMIN_USERNAME = 'admin'

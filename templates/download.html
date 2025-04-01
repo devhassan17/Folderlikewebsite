@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="download-page">
+    <h2>Install the App</h2>
+    
+    <div class="install-steps">
+        <div class="step">
+            <h3><i class="fab fa-apple"></i> iOS</h3>
+            <ol>
+                <li>Tap the <i class="fas fa-share"></i> Share button</li>
+                <li>Select "Add to Home Screen"</li>
+                <li>Tap "Add" in the top right</li>
+            </ol>
+        </div>
+        
+        <div class="step">
+            <h3><i class="fab fa-android"></i> Android</h3>
+            <ol>
+                <li>Tap the <i class="fas fa-ellipsis-vertical"></i> menu button</li>
+                <li>Select "Install App" or "Add to Home screen"</li>
+                <li>Confirm the installation</li>
+            </ol>
+        </div>
+    </div>
+    
+    <button class="install-btn" style="display:none;">
+        <i class="fas fa-download"></i> Install App
+    </button>
+    
+    <div class="qr-code-section">
+        <p>Or visit this page on your mobile device:</p>
+        <div class="qr-code-placeholder">
+            <img src="{{ url_for('static', filename='images/qr-code.png') }}" alt="QR Code">
+        </div>
+    </div>
+</div>
+{% endblock %}

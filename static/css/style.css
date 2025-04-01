@@ -30,6 +30,34 @@ body {
     border-radius: 4px;
 }
 
+/* Header and Navigation */
+.main-header {
+    background-color: #6e8efb;
+    padding: 15px 0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.main-nav {
+    display: flex;
+    justify-content: flex-end;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.main-nav a {
+    color: white;
+    text-decoration: none;
+    margin-left: 20px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.main-nav a i {
+    margin-right: 5px;
+}
+
 /* Hero Section */
 .hero {
     text-align: center;
@@ -117,6 +145,9 @@ body {
     border-radius: 4px;
     text-decoration: none;
     font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 .upload-btn:hover {
@@ -138,12 +169,20 @@ body {
     font-size: 1rem;
     color: #666;
     border-bottom: 3px solid transparent;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
 }
 
 .tab-btn.active {
     color: #6e8efb;
     border-bottom: 3px solid #6e8efb;
     font-weight: bold;
+}
+
+.tab-btn:hover {
+    color: #6e8efb;
 }
 
 .tab-content {
@@ -162,48 +201,213 @@ body {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s;
+    transition: all 0.3s;
+    cursor: pointer;
 }
 
 .media-item:hover {
     transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
 }
 
+/* Thumbnail Styles */
 .thumbnail {
     height: 180px;
     background-size: cover;
     background-position: center;
+    position: relative;
+    border-radius: 4px 4px 0 0;
+    overflow: hidden;
+}
+
+.thumbnail::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.1);
+    transition: background 0.3s;
+}
+
+.media-item:hover .thumbnail::after {
+    background: rgba(0,0,0,0.3);
+}
+
+/* Audio Thumbnail */
+.thumbnail.audio::before {
+    content: '\f001';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3rem;
+    color: white;
+    z-index: 1;
+}
+
+/* Video Thumbnail */
+.video-thumbnail-container {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+    border-radius: 4px 4px 0 0;
+}
+
+.video-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.play-button-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    transition: all 0.3s;
 }
 
-.thumbnail.audio {
-    background-color: #f0f8ff;
-}
-
-.thumbnail.video {
-    background-color: #fff0f5;
-}
-
-.thumbnail i {
+.play-button-overlay i {
     font-size: 3rem;
-    color: #6e8efb;
+    color: white;
+    opacity: 0.8;
+    transition: all 0.3s;
+}
+
+.media-item:hover .video-thumbnail {
+    transform: scale(1.05);
+}
+
+.media-item:hover .play-button-overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.media-item:hover .play-button-overlay i {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Media Info */
+.media-info {
+    padding: 15px;
 }
 
 .media-title {
-    padding: 15px;
     font-weight: bold;
-    text-align: center;
+    margin-bottom: 5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+.media-date {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+/* Media Type Badges */
+.media-type-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    color: white;
+    z-index: 2;
+}
+
+.photo-badge {
+    background-color: #4CAF50;
+}
+
+.audio-badge {
+    background-color: #2196F3;
+}
+
+.video-badge {
+    background-color: #f44336;
+}
+
+/* Audio/Video Players */
 audio, video {
     width: 100%;
     margin-top: 10px;
+    border-radius: 0 0 4px 4px;
+}
+
+/* No Media State */
+.no-media {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.no-media i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: #ddd;
+}
+
+.no-media p {
+    font-size: 1.1rem;
+}
+
+/* Modal Styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.9);
+    overflow: auto;
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    width: 80%;
+    max-width: 800px;
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.modal-media {
+    margin: auto;
+    display: block;
+    max-height: 80vh;
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 35px;
+    color: #f1f1f1;
+    font-size: 40px;
+    font-weight: bold;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.close-modal:hover {
+    color: #bbb;
 }
 
 /* Login Form */
@@ -272,14 +476,15 @@ audio, video {
     margin-bottom: 30px;
     color: #444;
 }
-/* Base Responsive Styles */
+
+/* Responsive Styles */
 @media (max-width: 768px) {
     .media-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
     
-    .thumbnail {
-        height: 120px;
+    .thumbnail, .video-thumbnail-container {
+        height: 150px;
     }
     
     .hero h1 {
@@ -293,6 +498,15 @@ audio, video {
     
     .main-nav a {
         margin: 5px 0;
+    }
+
+    .modal-content {
+        width: 90%;
+    }
+    
+    .close-modal {
+        font-size: 30px;
+        right: 20px;
     }
 }
 
@@ -308,162 +522,306 @@ audio, video {
     .tab-btn {
         width: 100%;
         text-align: center;
+        justify-content: center;
     }
-}
 
-/* Header and Navigation */
-.main-header {
-    background-color: #6e8efb;
-    padding: 15px 0;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.main-nav {
-    display: flex;
-    justify-content: flex-end;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-
-.main-nav a {
-    color: white;
-    text-decoration: none;
-    margin-left: 20px;
-    font-size: 1rem;
-    display: flex;
-    align-items: center;
-}
-
-.main-nav a i {
-    margin-right: 5px;
-}
-
-/* Improved Thumbnail Styles */
-.thumbnail {
-    height: 180px;
-    background-size: cover;
-    background-position: center;
-    position: relative;
-    border-radius: 4px 4px 0 0;
-    overflow: hidden;
-}
-
-.thumbnail::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.1);
-    transition: background 0.3s;
-}
-
-.thumbnail:hover::after {
-    background: rgba(0,0,0,0.3);
-}
-
-.thumbnail.audio::before {
-    content: '\f001'; /* music icon */
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3rem;
-    color: white;
-    z-index: 1;
-}
-
-.thumbnail.video::before {
-    content: '\f04b'; /* play icon */
-    font-family: 'Font Awesome 5 Free';
-    font-weight: 900;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 3rem;
-    color: white;
-    z-index: 1;
-}
-
-/* Media Item Hover Effects */
-.media-item:hover .thumbnail::after {
-    background: rgba(0,0,0,0.5);
-}
-
-.media-item:hover .thumbnail::before {
-    color: #6e8efb;
-}
-
-/* Audio/Video Controls */
-audio, video {
-    width: 100%;
-    margin-top: 10px;
-    border-radius: 0 0 4px 4px;
-}
-
-/* Form Responsiveness */
-@media (max-width: 600px) {
     .login-container, .upload-container {
         width: 90%;
         padding: 20px;
     }
+
+    .gallery-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
 }
-/* Video Thumbnail Styles */
-.video-thumbnail-container {
-    position: relative;
-    height: 180px;
-    overflow: hidden;
-    border-radius: 4px 4px 0 0;
+/* iOS Folder Styles */
+.ios-folder-container {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.ios-folder {
+    display: inline-block;
+    margin: 30px 0;
     cursor: pointer;
+    transition: transform 0.2s;
 }
 
-.video-thumbnail {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
-
-.video-thumbnail-container:hover .video-thumbnail {
+.ios-folder:hover {
     transform: scale(1.05);
 }
 
-.play-button-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.3);
-    transition: background 0.3s;
+.ios-folder-icon {
+    width: 120px;
+    height: 100px;
+    background: #4A90E2;
+    border-radius: 8px 8px 0 0;
+    position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
 
-.play-button-overlay i {
-    font-size: 3rem;
+.ios-folder-tab {
+    width: 50px;
+    height: 12px;
+    background: #4A90E2;
+    position: absolute;
+    top: -12px;
+    left: 20px;
+    border-radius: 8px 8px 0 0;
+}
+
+.ios-folder-body {
+    background: rgba(255,255,255,0.3);
+    width: 100%;
+    height: 100%;
+    border-radius: 8px 8px 0 0;
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.ios-folder-items {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.ios-folder-item {
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.7);
+}
+
+.ios-folder-item.photo {
+    background: #FF5E5B;
+}
+
+.ios-folder-item.video {
+    background: #00CECB;
+}
+
+.ios-folder-item.audio {
+    background: #FFED66;
+}
+
+.ios-folder-label {
+    display: block;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    color: #333;
+    font-weight: 500;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 768px) {
+    .ios-folder-icon {
+        width: 100px;
+        height: 85px;
+    }
+    
+    .ios-folder-item {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .ios-folder-label {
+        font-size: 1rem;
+    }
+}
+
+/* Add tap highlight color for mobile */
+.ios-folder {
+    -webkit-tap-highlight-color: transparent;
+}
+/* iOS Folder Styles (Updated) */
+.ios-folder-container {
+    text-align: center;
+    margin: 40px 0;
+    position: relative;
+}
+
+.ios-folder {
+    display: inline-block;
+    margin: 0 auto;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.ios-folder-icon {
+    width: 120px;
+    height: 100px;
+    background: linear-gradient(145deg, #5b9cf8, #4a90e2);
+    border-radius: 10px 10px 8px 8px;
+    position: relative;
+    box-shadow: 0 6px 15px rgba(74, 144, 226, 0.3);
+}
+
+/* Add these new styles */
+.download-app-mobile {
+    display: none;
+    margin-top: 30px;
+}
+
+.download-app-desktop {
+    margin-top: 50px;
+}
+
+.download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: linear-gradient(145deg, #4a90e2, #3a7bc8);
     color: white;
-    opacity: 0.8;
+    border-radius: 30px;
+    text-decoration: none;
+    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
     transition: all 0.3s;
 }
 
-.video-thumbnail-container:hover .play-button-overlay {
-    background: rgba(0, 0, 0, 0.5);
+.download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(74, 144, 226, 0.4);
 }
 
-.video-thumbnail-container:hover .play-button-overlay i {
-    opacity: 1;
-    transform: scale(1.1);
+/* Download Page Styles */
+.download-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    text-align: center;
 }
 
-.video-player {
-    width: 100%;
-    margin-top: 10px;
-    border-radius: 0 0 4px 4px;
+.download-options {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 40px 0;
+    flex-wrap: wrap;
+}
+
+.download-option {
+    padding: 30px;
+    border-radius: 15px;
+    width: 250px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.download-option i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.download-option.ios {
+    background: rgba(74, 144, 226, 0.1);
+    border: 1px solid rgba(74, 144, 226, 0.2);
+}
+
+.download-option.android {
+    background: rgba(121, 206, 121, 0.1);
+    border: 1px solid rgba(121, 206, 121, 0.2);
+}
+
+.qr-code-section {
+    margin-top: 40px;
+}
+
+.qr-code-section img {
+    width: 200px;
+    height: 200px;
+    border: 1px solid #eee;
+    padding: 15px;
+    border-radius: 10px;
+    background: white;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .download-app-desktop {
+        display: none;
+    }
+    
+    .download-app-mobile {
+        display: block;
+    }
+    
+    .ios-folder-icon {
+        width: 100px;
+        height: 85px;
+    }
+    
+    .download-options {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+/* Add iOS-like tap animation */
+.ios-folder:active {
+    transform: scale(0.95) translateY(2px);
+    opacity: 0.9;
+}
+/* PWA Install Styles */
+.install-btn {
+    background: linear-gradient(145deg, #4a90e2, #3a7bc8);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin: 20px auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3);
+}
+
+.install-steps {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin: 30px 0;
+    flex-wrap: wrap;
+}
+
+.step {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    width: 280px;
+}
+
+.step h3 {
+    color: #4a90e2;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.step ol {
+    text-align: left;
+    padding-left: 20px;
+}
+
+.step li {
+    margin-bottom: 10px;
+}
+
+.qr-code-placeholder {
+    background: white;
+    padding: 15px;
+    border-radius: 10px;
+    display: inline-block;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+}
+
+.qr-code-placeholder img {
+    width: 180px;
+    height: 180px;
 }
