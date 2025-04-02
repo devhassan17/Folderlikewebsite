@@ -1339,3 +1339,7 @@ audio, video {
 .category-title i {
     margin-right: 8px;
 }
+.app-icon-container{
+
+    padding: 10px;
+}

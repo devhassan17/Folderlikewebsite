@@ -1,14 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify, abort, make_response
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 from functools import wraps
-from flask_cors import CORS 
+from flask_cors import CORS
+import secrets
 
+# Initialize Flask app
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
+app.secret_key = 'your_secret_key_here'  # Change this to a secure random key in production
 CORS(app)
 
 # Configuration
@@ -19,6 +21,11 @@ app.config['ALLOWED_AUDIO_EXTENSIONS'] = ['.mp3', '.wav', '.ogg']
 app.config['ALLOWED_VIDEO_EXTENSIONS'] = ['.mp4', '.mov', '.avi']
 app.config['ALLOWED_DOCUMENT_EXTENSIONS'] = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
+
+# NFC Access Control Configuration
+app.config['NFC_TOKEN_VALIDITY'] = timedelta(minutes=5)  # Tokens expire after 5 minutes
+app.config['SESSION_LIFETIME'] = timedelta(minutes=30)  # Session expires after 30 minutes of inactivity
+valid_nfc_tokens = {}  # In-memory token storage (use Redis in production)
 
 # Database setup
 DATABASE = 'media.db'
@@ -73,9 +80,77 @@ os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'videos'), exist_ok=True)
 os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'documents'), exist_ok=True)
 os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'videos', 'thumbs'), exist_ok=True)
 
-@app.route('/')
-def index():
-    return render_template('index.html')
+# NFC Protection Functions
+def nfc_protected(f):
+    """Decorator to enforce NFC-only access"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # Skip NFC check for API endpoints and static files
+        if request.path.startswith('/api/') or request.path.startswith('/static/'):
+            return f(*args, **kwargs)
+            
+        # Skip NFC check for login/logout and nfc-auth endpoints
+        if request.path in ['/login', '/logout', '/nfc-auth']:
+            return f(*args, **kwargs)
+            
+        # Check if user has a valid NFC session
+        if not session.get('nfc_authenticated'):
+            abort(403, description="Access denied. Please scan the NFC tag to access this content.")
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/nfc-auth')
+def nfc_auth():
+    """Endpoint that the NFC tag should point to - generates a one-time token"""
+    # Generate a unique token
+    token = secrets.token_urlsafe(32)
+    valid_nfc_tokens[token] = {
+        'valid_until': datetime.now() + app.config['NFC_TOKEN_VALIDITY'],
+        'used': False,
+        'ip_address': request.remote_addr
+    }
+    
+    # Redirect to main page with token
+    return redirect(f'/?nfc_token={token}')
+
+@app.before_request
+def check_nfc_access():
+    """Check NFC authentication before processing requests"""
+    # Skip checks for static files and API endpoints
+    if request.path.startswith('/static/') or request.path.startswith('/api/'):
+        return
+        
+    # Skip checks for login/logout and nfc-auth endpoints
+    if request.path in ['/login', '/logout', '/nfc-auth']:
+        return
+    
+    # Check for NFC token in the initial access
+    token = request.args.get('nfc_token')
+    if token and token in valid_nfc_tokens:
+        token_data = valid_nfc_tokens[token]
+        
+        # Check if token is valid and not expired
+        if (datetime.now() <= token_data['valid_until'] and 
+            not token_data['used'] and
+            token_data['ip_address'] == request.remote_addr):
+            
+            # Mark token as used
+            valid_nfc_tokens[token]['used'] = True
+            
+            # Create authenticated session
+            session['nfc_authenticated'] = True
+            session.permanent = True
+            app.permanent_session_lifetime = app.config['SESSION_LIFETIME']
+            
+            # Remove the token from URL after validation
+            if request.args.get('nfc_token'):
+                response = make_response(redirect(request.path))
+                return response
+    
+    # For all other requests, verify the session
+    if not session.get('nfc_authenticated'):
+        abort(403, description="Access denied. Please scan the NFC tag to access this content.")
 
 @app.template_filter('format_date')
 def format_date_filter(value):
@@ -104,6 +179,11 @@ def generate_video_thumbnail(video_path, thumb_path):
     except Exception as e:
         print(f"Error generating thumbnail: {str(e)}")
         return False
+
+@app.route('/')
+@nfc_protected
+def index():
+    return render_template('index.html')
 
 @app.route('/api/media', methods=['GET'])
 def get_all_media_api():
@@ -176,6 +256,7 @@ def logout():
     return redirect(url_for('index'))
 
 @app.route('/upload', methods=['GET', 'POST'])
+@nfc_protected
 def upload():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
@@ -228,6 +309,28 @@ def upload():
 @app.route('/static/<path:filename>')
 def custom_static(filename):
     return send_from_directory(app.config['STATIC_FOLDER'], filename)
+
+# Add no-cache headers to all responses
+@app.after_request
+def add_no_cache(response):
+    if not request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
+
+# Clean up expired tokens periodically
+def cleanup_tokens():
+    now = datetime.now()
+    expired_tokens = [token for token, data in valid_nfc_tokens.items() 
+                     if now > data['valid_until']]
+    for token in expired_tokens:
+        valid_nfc_tokens.pop(token, None)
+
+# Schedule token cleanup (simple in-memory version)
+@app.before_request
+def before_req():
+    cleanup_tokens()
 
 if __name__ == '__main__':
     app.run(debug=True)
