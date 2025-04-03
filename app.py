@@ -95,6 +95,9 @@ def nfc_protected(f):
             
         # Check if user has a valid NFC session
         if not session.get('nfc_authenticated'):
+            # Special case: if accessing root URL, redirect to nfc-auth
+            if request.path == '/':
+                return redirect(url_for('nfc_auth'))
             abort(403, description="Access denied. Please scan the NFC tag to access this content.")
             
         return f(*args, **kwargs)
@@ -112,7 +115,11 @@ def nfc_auth():
     }
     
     # Redirect to main page with token
-    return redirect(f'/?nfc_token={token}')
+    response = make_response(redirect(url_for('index', nfc_token=token)))
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.before_request
 def check_nfc_access():
@@ -132,8 +139,7 @@ def check_nfc_access():
         
         # Check if token is valid and not expired
         if (datetime.now() <= token_data['valid_until'] and 
-            not token_data['used'] and
-            token_data['ip_address'] == request.remote_addr):
+            not token_data['used']):
             
             # Mark token as used
             valid_nfc_tokens[token]['used'] = True
@@ -145,11 +151,14 @@ def check_nfc_access():
             
             # Remove the token from URL after validation
             if request.args.get('nfc_token'):
-                response = make_response(redirect(request.path))
+                response = make_response(redirect(url_for('index')))
+                response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+                response.headers['Pragma'] = 'no-cache'
+                response.headers['Expires'] = '0'
                 return response
     
     # For all other requests, verify the session
-    if not session.get('nfc_authenticated'):
+    if not session.get('nfc_authenticated') and request.path != '/':
         abort(403, description="Access denied. Please scan the NFC tag to access this content.")
 
 @app.template_filter('format_date')
