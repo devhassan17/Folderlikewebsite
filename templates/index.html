@@ -11,9 +11,7 @@
 <div class="ios-home-screen">
     <!-- iOS Status Bar -->
     <div class="ios-status-bar">
-        <div class="time-container">
-            <div class="time">14:16</div>
-        </div>
+       
         <div class="status-icons">
           
             
@@ -601,17 +599,7 @@
             document.querySelector(`.tab-btn[data-tab="${tabName}"]`).classList.add('active');
         }
         
-        function updateTime() {
-            const now = new Date();
-            document.querySelectorAll('.time').forEach(el => {
-                el.textContent = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            });
-            
-            const batteryLevel = document.querySelector('.battery-level');
-            const randomLevel = Math.floor(Math.random() * 100);
-            batteryLevel.style.width = `${randomLevel}%`;
-            batteryLevel.style.backgroundColor = randomLevel > 20 ? '#fff' : '#ff453a';
-        }
+       
         
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
@@ -640,9 +628,7 @@
                 });
             });
             
-            // Initialize time
-            updateTime();
-            setInterval(updateTime, 60000);
+       
         });
         </script>
 </body>

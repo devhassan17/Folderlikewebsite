@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan NFC Tag</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+            text-align: center;
+        }
+        .nfc-prompt {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 90%;
+        }
+        .nfc-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #3f51b5;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        p {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.1);
+            border-radius: 50%;
+            border-top-color: #3f51b5;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .retry {
+            color: #3f51b5;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="nfc-prompt">
+        <div class="nfc-icon">
+            <!-- NFC icon using Unicode symbol -->
+            ⎗
+        </div>
+        <h1>Scan NFC Tag</h1>
+        <p>Please scan your NFC tag to access this content. Hold your device near the tag until the page refreshes automatically.</p>
+        
+        <div style="margin: 2rem 0;">
+            <span class="loading"></span>
+            <span>Waiting for NFC scan...</span>
+        </div>
+        
+        <p><small>If scanning doesn't work automatically, try refreshing the page immediately after scanning.</small></p>
+        <a href="/" class="retry">Try Again</a>
+    </div>
+
+    <script>
+        // Auto-refresh every 2 seconds to detect NFC scan
+        setTimeout(function() {
+            window.location.reload();
+        }, 2000);
+        
+        // Optional: Add vibration when page loads (for mobile)
+        if (navigator.vibrate) {
+            navigator.vibrate(200);
+        }
+    </script>
+</body>
+</html>
