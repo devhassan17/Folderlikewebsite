@@ -1,34 +1,30 @@
-from flask import Flask, render_template, request, session, redirect, url_for, flash, send_from_directory, jsonify, abort, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime
 import subprocess
 from functools import wraps
-import secrets
+from flask_cors import CORS 
 
-# Initialize Flask app
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(32)  # Secure random key
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+app.secret_key = 'your_secret_key_here'
+CORS(app)
 
-# File upload configuration
+# Configuration
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['STATIC_FOLDER'] = 'static'
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB
-app.config['ALLOWED_EXTENSIONS'] = {
-    'images': ['.jpg', '.jpeg', '.png', '.gif'],
-    'audio': ['.mp3', '.wav', '.ogg'],
-    'videos': ['.mp4', '.mov', '.avi'],
-    'documents': ['.pdf', '.doc', '.docx', '.txt']
-}
-
-# NFC access tracking (use Redis in production)
-nfc_access_tracker = {}
+app.config['ALLOWED_IMAGE_EXTENSIONS'] = ['.jpg', '.jpeg', '.png', '.gif']
+app.config['ALLOWED_AUDIO_EXTENSIONS'] = ['.mp3', '.wav', '.ogg']
+app.config['ALLOWED_VIDEO_EXTENSIONS'] = ['.mp4', '.mov', '.avi']
+app.config['ALLOWED_DOCUMENT_EXTENSIONS'] = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
 
 # Database setup
+DATABASE = 'media.db'
+
 def get_db():
-    db = sqlite3.connect('media.db')
+    db = sqlite3.connect(DATABASE)
     db.row_factory = sqlite3.Row
     return db
 
@@ -46,102 +42,132 @@ def init_db():
         ''')
         db.commit()
 
+def add_media(filename, filepath, media_type):
+    db = get_db()
+    db.execute(
+        'INSERT INTO media (filename, filepath, media_type, upload_date) VALUES (?, ?, ?, ?)',
+        (filename, filepath, media_type, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
+    db.commit()
+
+def get_media_by_type(media_type):
+    db = get_db()
+    cursor = db.execute('SELECT * FROM media WHERE media_type = ? ORDER BY upload_date DESC', (media_type,))
+    return cursor.fetchall()
+
+def get_all_media():
+    db = get_db()
+    cursor = db.execute('SELECT * FROM media ORDER BY upload_date DESC')
+    return cursor.fetchall()
+
+# Initialize database
 init_db()
 
-# Create required directories
-for folder in ['images', 'audio', 'videos', 'documents']:
-    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], folder), exist_ok=True)
-    os.makedirs(os.path.join(app.config['STATIC_FOLDER'], folder), exist_ok=True)
+# Ensure upload folders exist
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'images'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'audio'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
+os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'documents'), exist_ok=True)
+os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'images'), exist_ok=True)
+os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'audio'), exist_ok=True)
+os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'videos'), exist_ok=True)
+os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'documents'), exist_ok=True)
 os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'videos', 'thumbs'), exist_ok=True)
-
-@app.before_request
-def handle_nfc_authentication():
-    """Handle NFC-based authentication without requiring tag modifications"""
-    # Skip authentication for static files and API endpoints
-    if request.path.startswith(('/static/', '/api/', '/login', '/logout')):
-        return
-    
-    client_ip = request.remote_addr
-    now = datetime.now()
-    
-    # Detect NFC scan (rapid subsequent access from same IP)
-    if client_ip in nfc_access_tracker:
-        elapsed = (now - nfc_access_tracker[client_ip]).total_seconds()
-        if elapsed < 2:  # NFC scan detected (within 2 seconds)
-            session['nfc_authenticated'] = True
-            session.permanent = True
-    
-    # Update last access time
-    nfc_access_tracker[client_ip] = now
-    
-    # Clean up old entries (older than 1 minute)
-    for ip in list(nfc_access_tracker.keys()):
-        if (now - nfc_access_tracker[ip]).total_seconds() > 60:
-            nfc_access_tracker.pop(ip, None)
-
-def nfc_protected(f):
-    """Decorator to enforce NFC-only access"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('nfc_authenticated'):
-            abort(403, "Access denied. Please scan the NFC tag.")
-        return f(*args, **kwargs)
-    return decorated_function
 
 @app.route('/')
 def index():
-    if not session.get('nfc_authenticated'):
-        # Create a page that prompts user to scan NFC
-        resp = make_response(render_template('nfc_prompt.html'))
-        resp.headers['Cache-Control'] = 'no-store, must-revalidate'
-        return resp
     return render_template('index.html')
 
-@app.route('/api/media')
-@nfc_protected
-def get_media():
-    media_type = request.args.get('type', '')
+@app.template_filter('format_date')
+def format_date_filter(value):
+    if isinstance(value, str):
+        value = datetime.strptime(value, '%Y-%m-%d %H:%M:%S')
+    return value.strftime('%b %d, %Y')
+
+def generate_video_thumbnail(video_path, thumb_path):
+    """Generate thumbnail using FFmpeg"""
+    try:
+        cmd = [
+            'ffmpeg',
+            '-i', video_path,
+            '-ss', '00:00:01',
+            '-vframes', '1',
+            '-q:v', '2',
+            '-vf', 'scale=300:-1',
+            '-y',
+            thumb_path
+        ]
+        subprocess.run(cmd, check=True, 
+                      stdout=subprocess.PIPE, 
+                      stderr=subprocess.PIPE,
+                      timeout=30)
+        return True
+    except Exception as e:
+        print(f"Error generating thumbnail: {str(e)}")
+        return False
+
+@app.route('/api/media', methods=['GET'])
+def get_all_media_api():
+    media_type = request.args.get('type')
     
     try:
-        db = get_db()
-        if media_type and media_type in app.config['ALLOWED_EXTENSIONS']:
-            media = db.execute('SELECT * FROM media WHERE media_type = ? ORDER BY upload_date DESC', 
-                             (media_type,)).fetchall()
+        if media_type:
+            media = get_media_by_type(media_type)
         else:
-            media = db.execute('SELECT * FROM media ORDER BY upload_date DESC').fetchall()
+            media = get_all_media()
         
         media_list = []
         for item in media:
+            # Construct correct file paths
+            filepath = item['filepath'].replace('static/', '')
+            static_path = f"/static/{filepath}"
+            
             media_item = {
                 'id': item['id'],
                 'filename': item['filename'],
-                'filepath': f"/static/{item['filepath']}",
+                'filepath': static_path,
                 'media_type': item['media_type'],
                 'upload_date': item['upload_date']
             }
             
+            # Add thumbnail path for videos
             if item['media_type'] == 'videos':
-                thumb_path = f"videos/thumbs/{os.path.splitext(item['filename'])[0]}.jpg"
-                if os.path.exists(os.path.join(app.config['STATIC_FOLDER'], thumb_path)):
+                thumb_filename = os.path.splitext(item['filename'])[0] + '.jpg'
+                thumb_path = f"videos/thumbs/{thumb_filename}"
+                thumb_full_path = os.path.join(app.config['STATIC_FOLDER'], thumb_path)
+                
+                # Check if thumbnail exists
+                if os.path.exists(thumb_full_path):
                     media_item['thumbnail'] = f"/static/{thumb_path}"
+                else:
+                    # Try to generate thumbnail if it doesn't exist
+                    video_full_path = os.path.join(app.config['STATIC_FOLDER'], filepath)
+                    if generate_video_thumbnail(video_full_path, thumb_full_path):
+                        media_item['thumbnail'] = f"/static/{thumb_path}"
             
             media_list.append(media_item)
         
-        return jsonify({'success': True, 'data': media_list})
+        return jsonify({
+            'success': True,
+            'data': media_list
+        })
+        
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
 @app.route('/login', methods=['GET', 'POST'])
-@nfc_protected
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username == 'admin' and password == 'password':  # Change in production!
+        if username == 'admin' and password == 'password':
             session['logged_in'] = True
             return redirect(url_for('upload'))
-        flash('Invalid credentials', 'error')
+        else:
+            flash('Invalid credentials', 'error')
     return render_template('login.html')
 
 @app.route('/logout')
@@ -150,69 +176,58 @@ def logout():
     return redirect(url_for('index'))
 
 @app.route('/upload', methods=['GET', 'POST'])
-@nfc_protected
 def upload():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    
+        
     if request.method == 'POST':
-        file = request.files.get('file')
+        file = request.files['file']
         media_type = request.form.get('media_type')
         
-        if file and media_type in app.config['ALLOWED_EXTENSIONS']:
-            ext = os.path.splitext(file.filename)[1].lower()
-            if ext not in app.config['ALLOWED_EXTENSIONS'][media_type]:
-                flash('Invalid file type', 'error')
+        if file and media_type in ['images', 'audio', 'videos', 'documents']:
+            filename = secure_filename(file.filename)
+            file_ext = os.path.splitext(filename)[1].lower()
+            
+            # Validate file extension
+            allowed_extensions = {
+                'images': app.config['ALLOWED_IMAGE_EXTENSIONS'],
+                'audio': app.config['ALLOWED_AUDIO_EXTENSIONS'],
+                'videos': app.config['ALLOWED_VIDEO_EXTENSIONS'],
+                'documents': app.config['ALLOWED_DOCUMENT_EXTENSIONS']
+            }
+            
+            if file_ext not in allowed_extensions[media_type]:
+                flash(f'Invalid file extension for {media_type}', 'error')
                 return redirect(url_for('upload'))
             
             try:
-                filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{secure_filename(file.filename)}"
-                save_path = os.path.join(app.config['STATIC_FOLDER'], media_type, filename)
-                file.save(save_path)
+                # Save to static folder
+                static_subfolder = os.path.join(app.config['STATIC_FOLDER'], media_type)
+                static_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
+                static_path = os.path.join(static_subfolder, static_filename)
+                file.save(static_path)
                 
+                # Generate thumbnail if video
                 if media_type == 'videos':
-                    thumb_name = f"{os.path.splitext(filename)[0]}.jpg"
-                    thumb_path = os.path.join(app.config['STATIC_FOLDER'], 'videos', 'thumbs', thumb_name)
-                    if not generate_thumbnail(save_path, thumb_path):
-                        flash('Video uploaded but thumbnail failed', 'warning')
+                    thumb_filename = os.path.splitext(static_filename)[0] + '.jpg'
+                    thumb_path = os.path.join(app.config['STATIC_FOLDER'], 'videos', 'thumbs', thumb_filename)
+                    if not generate_video_thumbnail(static_path, thumb_path):
+                        flash('Video uploaded but thumbnail generation failed', 'warning')
                 
-                db = get_db()
-                db.execute(
-                    'INSERT INTO media (filename, filepath, media_type, upload_date) VALUES (?, ?, ?, ?)',
-                    (file.filename, f"{media_type}/{filename}", media_type, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-                )
-                db.commit()
-                flash('Upload successful!', 'success')
+                # Add to database
+                db_path = os.path.join(media_type, static_filename).replace('\\', '/')
+                add_media(filename, db_path, media_type)
+                flash(f'{media_type.capitalize()} uploaded successfully!', 'success')
+                
             except Exception as e:
-                flash(f'Upload failed: {str(e)}', 'error')
+                print(f"Error uploading file: {str(e)}")
+                flash('Error uploading file', 'error')
     
     return render_template('upload.html')
 
-def generate_thumbnail(video_path, thumb_path):
-    """Generate video thumbnail using ffmpeg"""
-    try:
-        subprocess.run([
-            'ffmpeg', '-i', video_path,
-            '-ss', '00:00:01', '-vframes', '1',
-            '-q:v', '2', '-vf', 'scale=300:-1',
-            '-y', thumb_path
-        ], check=True, timeout=30)
-        return True
-    except Exception:
-        return False
-
 @app.route('/static/<path:filename>')
-def static_files(filename):
+def custom_static(filename):
     return send_from_directory(app.config['STATIC_FOLDER'], filename)
 
-@app.after_request
-def add_security_headers(response):
-    """Add security headers to all responses"""
-    if not request.path.startswith('/static/'):
-        response.headers['Cache-Control'] = 'no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-    return response
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True)
