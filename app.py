@@ -5,7 +5,7 @@ import sqlite3
 from datetime import datetime
 import subprocess
 from functools import wraps
-from flask_cors import CORS 
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -19,6 +19,9 @@ app.config['ALLOWED_AUDIO_EXTENSIONS'] = ['.mp3', '.wav', '.ogg']
 app.config['ALLOWED_VIDEO_EXTENSIONS'] = ['.mp4', '.mov', '.avi']
 app.config['ALLOWED_DOCUMENT_EXTENSIONS'] = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
+
+# In-memory request logs
+request_logs = []
 
 # Database setup
 DATABASE = 'media.db'
@@ -63,15 +66,28 @@ def get_all_media():
 init_db()
 
 # Ensure upload folders exist
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'images'), exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'audio'), exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'videos'), exist_ok=True)
-os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], 'documents'), exist_ok=True)
-os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'images'), exist_ok=True)
-os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'audio'), exist_ok=True)
-os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'videos'), exist_ok=True)
-os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'documents'), exist_ok=True)
-os.makedirs(os.path.join(app.config['STATIC_FOLDER'], 'videos', 'thumbs'), exist_ok=True)
+for sub in ['images', 'audio', 'videos', 'documents', 'videos/thumbs']:
+    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], sub), exist_ok=True)
+    os.makedirs(os.path.join(app.config['STATIC_FOLDER'], sub), exist_ok=True)
+
+@app.before_request
+def log_request_info():
+    try:
+        log_entry = {
+            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'method': request.method,
+            'path': request.path,
+            'headers': dict(request.headers),
+            'args': request.args.to_dict(),
+            'form': request.form.to_dict(),
+            'json': request.get_json(silent=True),
+            'remote_addr': request.remote_addr
+        }
+        request_logs.append(log_entry)
+        if len(request_logs) > 1000:
+            request_logs.pop(0)
+    except Exception as e:
+        print(f"Error logging request: {e}")
 
 @app.route('/')
 def index():
@@ -84,7 +100,6 @@ def format_date_filter(value):
     return value.strftime('%b %d, %Y')
 
 def generate_video_thumbnail(video_path, thumb_path):
-    """Generate thumbnail using FFmpeg"""
     try:
         cmd = [
             'ffmpeg',
@@ -96,8 +111,8 @@ def generate_video_thumbnail(video_path, thumb_path):
             '-y',
             thumb_path
         ]
-        subprocess.run(cmd, check=True, 
-                      stdout=subprocess.PIPE, 
+        subprocess.run(cmd, check=True,
+                      stdout=subprocess.PIPE,
                       stderr=subprocess.PIPE,
                       timeout=30)
         return True
@@ -108,19 +123,16 @@ def generate_video_thumbnail(video_path, thumb_path):
 @app.route('/api/media', methods=['GET'])
 def get_all_media_api():
     media_type = request.args.get('type')
-    
     try:
         if media_type:
             media = get_media_by_type(media_type)
         else:
             media = get_all_media()
-        
+
         media_list = []
         for item in media:
-            # Construct correct file paths
             filepath = item['filepath'].replace('static/', '')
             static_path = f"/static/{filepath}"
-            
             media_item = {
                 'id': item['id'],
                 'filename': item['filename'],
@@ -128,41 +140,27 @@ def get_all_media_api():
                 'media_type': item['media_type'],
                 'upload_date': item['upload_date']
             }
-            
-            # Add thumbnail path for videos
             if item['media_type'] == 'videos':
                 thumb_filename = os.path.splitext(item['filename'])[0] + '.jpg'
                 thumb_path = f"videos/thumbs/{thumb_filename}"
                 thumb_full_path = os.path.join(app.config['STATIC_FOLDER'], thumb_path)
-                
-                # Check if thumbnail exists
                 if os.path.exists(thumb_full_path):
                     media_item['thumbnail'] = f"/static/{thumb_path}"
                 else:
-                    # Try to generate thumbnail if it doesn't exist
                     video_full_path = os.path.join(app.config['STATIC_FOLDER'], filepath)
                     if generate_video_thumbnail(video_full_path, thumb_full_path):
                         media_item['thumbnail'] = f"/static/{thumb_path}"
-            
             media_list.append(media_item)
-        
-        return jsonify({
-            'success': True,
-            'data': media_list
-        })
-        
+
+        return jsonify({'success': True, 'data': media_list})
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 500
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        
         if username == 'admin' and password == 'password':
             session['logged_in'] = True
             return redirect(url_for('upload'))
@@ -179,55 +177,57 @@ def logout():
 def upload():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-        
+
     if request.method == 'POST':
         file = request.files['file']
         media_type = request.form.get('media_type')
-        
+
         if file and media_type in ['images', 'audio', 'videos', 'documents']:
             filename = secure_filename(file.filename)
             file_ext = os.path.splitext(filename)[1].lower()
-            
-            # Validate file extension
+
             allowed_extensions = {
                 'images': app.config['ALLOWED_IMAGE_EXTENSIONS'],
                 'audio': app.config['ALLOWED_AUDIO_EXTENSIONS'],
                 'videos': app.config['ALLOWED_VIDEO_EXTENSIONS'],
                 'documents': app.config['ALLOWED_DOCUMENT_EXTENSIONS']
             }
-            
+
             if file_ext not in allowed_extensions[media_type]:
                 flash(f'Invalid file extension for {media_type}', 'error')
                 return redirect(url_for('upload'))
-            
+
             try:
-                # Save to static folder
                 static_subfolder = os.path.join(app.config['STATIC_FOLDER'], media_type)
                 static_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{filename}"
                 static_path = os.path.join(static_subfolder, static_filename)
                 file.save(static_path)
-                
-                # Generate thumbnail if video
+
                 if media_type == 'videos':
                     thumb_filename = os.path.splitext(static_filename)[0] + '.jpg'
                     thumb_path = os.path.join(app.config['STATIC_FOLDER'], 'videos', 'thumbs', thumb_filename)
                     if not generate_video_thumbnail(static_path, thumb_path):
                         flash('Video uploaded but thumbnail generation failed', 'warning')
-                
-                # Add to database
+
                 db_path = os.path.join(media_type, static_filename).replace('\\', '/')
                 add_media(filename, db_path, media_type)
                 flash(f'{media_type.capitalize()} uploaded successfully!', 'success')
-                
+
             except Exception as e:
                 print(f"Error uploading file: {str(e)}")
                 flash('Error uploading file', 'error')
-    
+
     return render_template('upload.html')
 
 @app.route('/static/<path:filename>')
 def custom_static(filename):
     return send_from_directory(app.config['STATIC_FOLDER'], filename)
+
+@app.route('/request-logs')
+def show_request_logs():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('request_logs.html', logs=reversed(request_logs))
 
 if __name__ == '__main__':
     app.run(debug=True)
