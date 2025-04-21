@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime, timedelta
 from config import Config
 
 def get_db_connection():
@@ -17,8 +18,16 @@ def init_db():
             upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ''')
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS unlock_sessions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT NOT NULL UNIQUE, -- The unique session unlock token
+            created_at TIMESTAMP NOT NULL
+        )
+    ''')
     conn.commit()
     conn.close()
+    print("Database initialized (media and unlock_sessions tables).")
 
 def add_media(filename, filepath, media_type):
     conn = get_db_connection()
@@ -29,13 +38,13 @@ def add_media(filename, filepath, media_type):
 
 def get_media_by_type(media_type):
     conn = get_db_connection()
-    media = conn.execute('SELECT * FROM media WHERE media_type = ?', (media_type,)).fetchall()
+    media = conn.execute('SELECT * FROM media WHERE media_type = ? ORDER BY upload_date DESC', (media_type,)).fetchall()
     conn.close()
     return media
 
 def get_all_media():
     conn = get_db_connection()
-    media = conn.execute('SELECT * FROM media').fetchall()
+    media = conn.execute('SELECT * FROM media ORDER BY upload_date DESC').fetchall()
     conn.close()
     return media
 
@@ -44,3 +53,48 @@ def delete_media(media_id):
     conn.execute('DELETE FROM media WHERE id = ?', (media_id,))
     conn.commit()
     conn.close()
+
+def add_unlock_session(token):
+    """Adds a new unlock session token to the database."""
+    conn = get_db_connection()
+    try:
+        conn.execute('INSERT INTO unlock_sessions (token, created_at) VALUES (?, ?)',
+                     (token, datetime.now()))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        # Handle cases where the token might already exist (very unlikely with secrets.token_hex)
+        print(f"Warning: Attempted to insert duplicate unlock token: {token}")
+        pass # Or raise an error if this shouldn't happen
+    finally:
+        conn.close()
+
+def validate_unlock_token(token):
+    """Checks if a token exists and is within the valid time window."""
+    conn = get_db_connection()
+    try:
+        result = conn.execute('SELECT created_at FROM unlock_sessions WHERE token = ?', (token,)).fetchone()
+        if result:
+            created_at = result['created_at']
+            # Ensure created_at is a datetime object
+            if isinstance(created_at, str):
+                created_at = datetime.fromisoformat(created_at)
+
+            valid_until = created_at + timedelta(minutes=Config.UNLOCK_SESSION_TIMEOUT_MINUTES)
+            if datetime.now() < valid_until:
+                return True # Token is valid and not expired
+    finally:
+        conn.close()
+    return False # Token not found or expired
+
+def cleanup_expired_tokens():
+    """Removes tokens older than the configured timeout."""
+    conn = get_db_connection()
+    try:
+        cutoff_time = datetime.now() - timedelta(minutes=Config.UNLOCK_SESSION_TIMEOUT_MINUTES)
+        result = conn.execute('DELETE FROM unlock_sessions WHERE created_at < ?', (cutoff_time,))
+        deleted_count = result.rowcount
+        conn.commit()
+        if deleted_count > 0:
+            print(f"Cleaned up {deleted_count} expired unlock session(s).")
+    finally:
+        conn.close()

@@ -1,11 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify, abort
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 import subprocess
 from functools import wraps
 from flask_cors import CORS
+import secrets
+
+# Import Config and database functions
+from config import Config, get_allowed_extensions
+import database as db
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
@@ -72,6 +77,8 @@ for sub in ['images', 'audio', 'videos', 'documents', 'videos/thumbs']:
 
 @app.before_request
 def log_request_info():
+    if request.path.startswith('/static') or request.path == '/unlock':
+        return
     try:
         log_entry = {
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
