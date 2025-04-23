@@ -1,24 +1,30 @@
 import os
 
-STATIC_FOLDER = 'static'
+# STATIC_FOLDER = 'static' # Remove or comment out from here
 
 class Config:
+    # --- Core Settings ---
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-should-be-changed') # Use environment variable or change this
     ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
     ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'password') # Change this!
-    UPLOAD_FOLDER = 'uploads' # Keep this? Seems static is used more.
-    ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'mov'}
+
+    # --- File Paths ---
+    STATIC_FOLDER = 'static' # Define INSIDE the class
+    UPLOAD_FOLDER = 'uploads' # Keep this for consistency, even if less used?
+
+    # --- Upload Restrictions ---
+    # General allowed set (maybe remove if using specific types below?)
+    # ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'mov'}
     MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB limit
 
-    # Media type configurations (example, adjust as needed)
+    # Media type configurations
     ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif'}
     ALLOWED_AUDIO_EXTENSIONS = {'.mp3', '.wav', '.ogg'}
     ALLOWED_VIDEO_EXTENSIONS = {'.mp4', '.mov', '.avi'}
     ALLOWED_DOCUMENT_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'}
 
     # --- NFC Access Control ---
-    # Replace with your actual NFC tag unique identifiers
-    VALID_NFC_TAGS = {'04:08:30:6A:B6:11:91'}
+    VALID_NFC_TAGS = {'YOUR_NFC_TAG_ID_1', 'YOUR_NFC_TAG_ID_2'}
     UNLOCK_SESSION_TIMEOUT_MINUTES = 10 # How long access remains valid after scan (in minutes)
     # --- End NFC Access Control ---
 

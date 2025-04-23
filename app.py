@@ -13,66 +13,22 @@ from config import Config, get_allowed_extensions
 import database as db
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
-CORS(app)
 
-# Configuration
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['STATIC_FOLDER'] = 'static'
-app.config['ALLOWED_IMAGE_EXTENSIONS'] = ['.jpg', '.jpeg', '.png', '.gif']
-app.config['ALLOWED_AUDIO_EXTENSIONS'] = ['.mp3', '.wav', '.ogg']
-app.config['ALLOWED_VIDEO_EXTENSIONS'] = ['.mp4', '.mov', '.avi']
-app.config['ALLOWED_DOCUMENT_EXTENSIONS'] = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt']
-app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB limit
+# --- Load Configuration from config.py ---
+app.config.from_object(Config)
+app.secret_key = app.config['SECRET_KEY'] # Set secret key from loaded config
+# ----------------------------------------
+
+CORS(app)
 
 # In-memory request logs
 request_logs = []
 
-# Database setup
-DATABASE = 'media.db'
+# Initialize database using the function from database.py
+db.init_db()
 
-def get_db():
-    db = sqlite3.connect(DATABASE)
-    db.row_factory = sqlite3.Row
-    return db
-
-def init_db():
-    with app.app_context():
-        db = get_db()
-        db.execute('''
-            CREATE TABLE IF NOT EXISTS media (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename TEXT NOT NULL,
-                filepath TEXT NOT NULL,
-                media_type TEXT NOT NULL,
-                upload_date TEXT NOT NULL
-            )
-        ''')
-        db.commit()
-
-def add_media(filename, filepath, media_type):
-    db = get_db()
-    db.execute(
-        'INSERT INTO media (filename, filepath, media_type, upload_date) VALUES (?, ?, ?, ?)',
-        (filename, filepath, media_type, datetime.now().strftime('%Y-%m-%d %H:%M:%S')))
-    db.commit()
-
-def get_media_by_type(media_type):
-    db = get_db()
-    cursor = db.execute('SELECT * FROM media WHERE media_type = ? ORDER BY upload_date DESC', (media_type,))
-    return cursor.fetchall()
-
-def get_all_media():
-    db = get_db()
-    cursor = db.execute('SELECT * FROM media ORDER BY upload_date DESC')
-    return cursor.fetchall()
-
-# Initialize database
-init_db()
-
-# Ensure upload folders exist
+# Ensure upload folders exist using paths from loaded config
 for sub in ['images', 'audio', 'videos', 'documents', 'videos/thumbs']:
-    os.makedirs(os.path.join(app.config['UPLOAD_FOLDER'], sub), exist_ok=True)
     os.makedirs(os.path.join(app.config['STATIC_FOLDER'], sub), exist_ok=True)
 
 @app.before_request
@@ -96,8 +52,33 @@ def log_request_info():
     except Exception as e:
         print(f"Error logging request: {e}")
 
+def nfc_protected_route(f):
+    """Decorator to protect routes, requiring a valid NFC unlock session."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        unlock_token = session.get('nfc_unlock_token')
+        # Validate the token using the database function
+        if not unlock_token or not db.validate_unlock_token(unlock_token):
+             # Check if login is also required for this route (added via login_required decorator)
+            is_login_required = getattr(f, 'login_required', False)
+            if is_login_required and not session.get('logged_in'):
+                 # If login is required but user isn't logged in, prioritize login redirect
+                 flash('Please log in to access this page.', 'warning')
+                 return redirect(url_for('login'))
+            else:
+                # If login isn't required or user is logged in, but NFC is missing/invalid
+                flash('Access denied. Please scan a valid NFC tag.', 'error')
+                # Redirect to login page (or a dedicated access denied page)
+                return redirect(url_for('login'))
+        # If token is valid, proceed with the original route function
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/')
+@nfc_protected_route
 def index():
+    """Displays the main page, likely showing media."""
+    # This route now requires NFC unlock first
     return render_template('index.html')
 
 @app.template_filter('format_date')
@@ -132,9 +113,9 @@ def get_all_media_api():
     media_type = request.args.get('type')
     try:
         if media_type:
-            media = get_media_by_type(media_type)
+            media = db.get_media_by_type(media_type)
         else:
-            media = get_all_media()
+            media = db.get_all_media()
 
         media_list = []
         for item in media:
@@ -217,7 +198,7 @@ def upload():
                         flash('Video uploaded but thumbnail generation failed', 'warning')
 
                 db_path = os.path.join(media_type, static_filename).replace('\\', '/')
-                add_media(filename, db_path, media_type)
+                db.add_media(filename, db_path, media_type)
                 flash(f'{media_type.capitalize()} uploaded successfully!', 'success')
 
             except Exception as e:
@@ -236,5 +217,53 @@ def show_request_logs():
         return redirect(url_for('login'))
     return render_template('request_logs.html', logs=reversed(request_logs))
 
+@app.route('/unlock', methods=['GET'])
+def unlock_via_nfc():
+    """Endpoint triggered by NFC scan. Validates tag and creates unlock session."""
+    scanned_token = request.args.get('nfc_token')
+    if not scanned_token:
+        flash('NFC token missing in unlock attempt.', 'error')
+        return redirect(url_for('login'))
+
+    if scanned_token in app.config['VALID_NFC_TAGS']:
+        session_token = secrets.token_hex(16)
+        try:
+            db.add_unlock_session(session_token)
+            session['nfc_unlock_token'] = session_token
+            print(f"NFC Unlock successful for tag ID ending: ...{scanned_token[-6:]}. Session token generated.")
+            flash('NFC Scan Successful! Access granted.', 'success')
+            return redirect(url_for('index'))
+        except Exception as e:
+            print(f"Error adding unlock session to DB: {e}")
+            flash('Server error during NFC unlock process.', 'error')
+            return redirect(url_for('login'))
+    else:
+        print(f"Invalid NFC tag scanned: {scanned_token}")
+        flash('Invalid NFC tag scanned.', 'error')
+        return redirect(url_for('login'))
+
+def login_required(f):
+    """Decorator to require user login for a route."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('login'))
+        setattr(decorated_function, 'login_required', True)
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.before_request
+def run_token_cleanup():
+    """Cleans up expired tokens occasionally before handling a request."""
+    import random
+    if not request.path.startswith('/static') and request.path != '/unlock':
+        if random.random() < 0.05: # Run approx 5% of the time
+            try:
+                print("Running periodic cleanup of expired unlock tokens...")
+                db.cleanup_expired_tokens()
+            except Exception as e:
+                print(f"Error during periodic token cleanup: {e}")
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
