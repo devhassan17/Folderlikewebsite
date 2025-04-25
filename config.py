@@ -24,7 +24,7 @@ class Config:
     ALLOWED_DOCUMENT_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'}
 
     # --- NFC Access Control ---
-    VALID_NFC_TAGS = {'YOUR_NFC_TAG_ID_1', 'YOUR_NFC_TAG_ID_2'}
+    VALID_NFC_TAGS = {'04:08:30:6A:B6:11:91', 'YOUR_NFC_TAG_ID_2'}
     UNLOCK_SESSION_TIMEOUT_MINUTES = 10 # How long access remains valid after scan (in minutes)
     # --- End NFC Access Control ---
 
