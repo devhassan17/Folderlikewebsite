@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, jsonify
 from werkzeug.utils import secure_filename
 import os
 import sqlite3
@@ -12,12 +12,11 @@ import secrets
 from config import Config, get_allowed_extensions
 import database as db
 
-
 app = Flask(__name__)
 
 # --- Load Configuration from config.py ---
 app.config.from_object(Config)
-app.secret_key = app.config['SECRET_KEY'] # Set secret key from loaded config
+app.secret_key = app.config['SECRET_KEY']  # Set secret key from loaded config
 # ----------------------------------------
 
 CORS(app)
@@ -105,7 +104,6 @@ def nfc_protected_route(f):
     return decorated_function
 
 @app.route('/')
-@nfc_protected_route
 def index():
     """Displays the main page, likely showing media."""
     # This route now requires NFC unlock first
@@ -197,7 +195,7 @@ def logout():
     session.clear()
     
     flash('You have been logged out.', 'info')
-    return redirect(url_for('login')) # Redirect to login after logout
+    return redirect(url_for('login'))  # Redirect to login after logout
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -275,82 +273,16 @@ def unlock_via_nfc():
     if existing_token:
         session.pop('nfc_unlock_token', None)
     
-    # Check if the scanned token is in our whitelist
+    # Check if scanned NFC token is in valid list
     if scanned_token in VALID_UIDS:
-        # Clean up expired tokens first
-        db.cleanup_expired_tokens()
-        
-        # Generate a new unique token
-        session_token = secrets.token_hex(16)
-        try:
-            db.add_unlock_session(session_token)
-            session['nfc_unlock_token'] = session_token
-            print(f"NFC Unlock successful for tag ID ending: ...{scanned_token[-6:]}. Session token generated.")
-            flash('NFC Scan Successful! Access granted.', 'success')
-            return redirect(url_for('index'))
-        except Exception as e:
-            print(f"Error adding unlock session to DB: {e}")
-            flash('Server error during NFC unlock process.', 'error')
-            return redirect(url_for('login'))
+        unlock_token = secrets.token_urlsafe()
+        session['nfc_unlock_token'] = unlock_token
+        db.add_unlock_token(unlock_token)
+        flash('NFC tag validated. You are now unlocked!', 'success')
+        return redirect(url_for('index'))
     else:
-        print(f"Invalid NFC tag scanned: {scanned_token}")
-        flash('Invalid NFC tag scanned.', 'error')
+        flash('Invalid NFC tag detected!', 'error')
         return redirect(url_for('login'))
 
-def login_required(f):
-    """Decorator to require user login for a route."""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Please log in to access this page.', 'warning')
-            return redirect(url_for('login'))
-        setattr(decorated_function, 'login_required', True)
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.before_request
-def run_token_cleanup():
-    """Cleans up expired tokens before handling relevant requests."""
-    # Skip cleanup for static files and the unlock endpoint itself
-    if request.path.startswith('/static') or request.path == '/unlock':
-        return
-        
-    try:
-        # Run cleanup on ALL other requests to ensure timely token expiration
-        print("Running cleanup of expired unlock tokens...")
-        db.cleanup_expired_tokens()
-    except Exception as e:
-        print(f"Error during token cleanup: {e}")
-
-@app.route('/admin', methods=['GET', 'POST'])
-def admin_login():
-    """Admin login page to access whitelist management"""
-    if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        if username == app.config['ADMIN_USERNAME'] and password == app.config['ADMIN_PASSWORD']:
-            session['logged_in'] = True
-            flash('Login successful', 'success')
-            return redirect(url_for('admin_whitelist'))
-        else:
-            flash('Invalid credentials', 'error')
-    
-    return render_template('admin_login.html')
-
-@app.route('/admin/whitelist', methods=['GET', 'POST'])
-@login_required
-def admin_whitelist():
-    """Simple page to view the current whitelist"""
-    if request.method == 'POST':
-        action = request.form.get('action')
-        if action == 'reload':
-            # Reload UIDs from file
-            reload_uids()
-            flash('Whitelist reloaded from file', 'success')
-    
-    uids = sorted(list(VALID_UIDS))
-    return render_template('admin_whitelist.html', whitelist=uids)
-
-
 if __name__ == '__main__':
-     app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(debug=True)

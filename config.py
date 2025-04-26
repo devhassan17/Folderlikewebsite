@@ -15,11 +15,11 @@ class Config:
     # --- Upload Restrictions ---
     # General allowed set (maybe remove if using specific types below?)
     # ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp3', 'wav', 'mp4', 'mov'}
-    MAX_CONTENT_LENGTH = 50 * 1024 * 1024  # 50MB limit
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 50MB limit
 
     # Media type configurations
     ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif'}
-    ALLOWED_AUDIO_EXTENSIONS = {'.mp3', '.wav', '.ogg'}
+    ALLOWED_AUDIO_EXTENSIONS = {'.mp3', '.wav', '.ogg', '.m4a'}
     ALLOWED_VIDEO_EXTENSIONS = {'.mp4', '.mov', '.avi'}
     ALLOWED_DOCUMENT_EXTENSIONS = {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt'}
 
