@@ -12,6 +12,7 @@ import secrets
 from config import Config, get_allowed_extensions
 import database as db
 
+
 app = Flask(__name__)
 
 # --- Load Configuration from config.py ---
@@ -349,6 +350,7 @@ def admin_whitelist():
     
     uids = sorted(list(VALID_UIDS))
     return render_template('admin_whitelist.html', whitelist=uids)
+
 
 if __name__ == '__main__':
      app.run(host='0.0.0.0', port=5000, debug=True)
