@@ -25,7 +25,10 @@ class Config:
 
     # --- NFC Access Control ---
     VALID_NFC_TAGS = {'04:08:30:6A:B6:11:91', 'YOUR_NFC_TAG_ID_2'}
-    UNLOCK_SESSION_TIMEOUT_MINUTES = 10 # How long access remains valid after scan (in minutes)
+    
+    # Access timeout settings (choose ONE to use - if both are set, seconds takes precedence)
+    # UNLOCK_SESSION_TIMEOUT_MINUTES = 1  # How long access remains valid after scan (in minutes)
+    UNLOCK_SESSION_TIMEOUT_SECONDS = 10  # For more precise control (in seconds, overrides minutes setting)
     # --- End NFC Access Control ---
 
 # Helper function to get allowed extensions for a type

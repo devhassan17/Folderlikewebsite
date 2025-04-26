@@ -75,22 +75,57 @@ def validate_unlock_token(token):
         result = conn.execute('SELECT created_at FROM unlock_sessions WHERE token = ?', (token,)).fetchone()
         if result:
             created_at = result['created_at']
-            # Ensure created_at is a datetime object
-            if isinstance(created_at, str):
-                created_at = datetime.fromisoformat(created_at)
-
-            valid_until = created_at + timedelta(minutes=Config.UNLOCK_SESSION_TIMEOUT_MINUTES)
-            if datetime.now() < valid_until:
-                return True # Token is valid and not expired
+            
+            # Handle SQLite timestamp to datetime conversion
+            try:
+                # If it's already a datetime object
+                if isinstance(created_at, datetime):
+                    pass
+                # If it's a ISO format string
+                elif isinstance(created_at, str):
+                    try:
+                        created_at = datetime.fromisoformat(created_at)
+                    except ValueError:
+                        # Try parsing with explicit format if fromisoformat fails
+                        created_at = datetime.strptime(created_at, '%Y-%m-%d %H:%M:%S.%f')
+                else:
+                    print(f"Warning: Unexpected created_at type: {type(created_at)}")
+                    return False
+                    
+                # Calculate timeout using seconds first (if defined), falling back to minutes
+                if hasattr(Config, 'UNLOCK_SESSION_TIMEOUT_SECONDS') and Config.UNLOCK_SESSION_TIMEOUT_SECONDS is not None:
+                    valid_until = created_at + timedelta(seconds=Config.UNLOCK_SESSION_TIMEOUT_SECONDS)
+                    print(f"Using seconds timeout: {Config.UNLOCK_SESSION_TIMEOUT_SECONDS}s")
+                else:
+                    valid_until = created_at + timedelta(minutes=Config.UNLOCK_SESSION_TIMEOUT_MINUTES)
+                    print(f"Using minutes timeout: {Config.UNLOCK_SESSION_TIMEOUT_MINUTES}m")
+                
+                now = datetime.now()
+                is_valid = now < valid_until
+                
+                # Print debug info
+                time_diff = (now - created_at).total_seconds()
+                print(f"Token check: created={created_at}, now={now}, diff={time_diff:.1f}s, valid_until={valid_until}, is_valid={is_valid}")
+                
+                return is_valid
+            except Exception as e:
+                print(f"Error validating token timestamp: {e}")
+                return False
     finally:
         conn.close()
-    return False # Token not found or expired
+    return False  # Token not found or expired
 
 def cleanup_expired_tokens():
     """Removes tokens older than the configured timeout."""
     conn = get_db_connection()
     try:
-        cutoff_time = datetime.now() - timedelta(minutes=Config.UNLOCK_SESSION_TIMEOUT_MINUTES)
+        # Use seconds if defined, otherwise convert minutes to seconds
+        if hasattr(Config, 'UNLOCK_SESSION_TIMEOUT_SECONDS') and Config.UNLOCK_SESSION_TIMEOUT_SECONDS is not None:
+            timeout_seconds = Config.UNLOCK_SESSION_TIMEOUT_SECONDS
+        else:
+            timeout_seconds = Config.UNLOCK_SESSION_TIMEOUT_MINUTES * 60
+            
+        cutoff_time = datetime.now() - timedelta(seconds=timeout_seconds)
         result = conn.execute('DELETE FROM unlock_sessions WHERE created_at < ?', (cutoff_time,))
         deleted_count = result.rowcount
         conn.commit()

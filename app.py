@@ -21,6 +21,30 @@ app.secret_key = app.config['SECRET_KEY'] # Set secret key from loaded config
 
 CORS(app)
 
+# Load UIDs from file
+def load_uids_from_file(file_path='uid.txt'):
+    valid_uids = set()
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                uid = line.strip()
+                if uid:  # Skip empty lines
+                    valid_uids.add(uid)
+        return valid_uids
+    except Exception as e:
+        print(f"Error loading UIDs from file: {e}")
+        return set()
+
+def reload_uids():
+    """Reload UIDs from file without server restart"""
+    global VALID_UIDS
+    VALID_UIDS = load_uids_from_file()
+    print(f"Reloaded {len(VALID_UIDS)} UIDs from whitelist file")
+    return VALID_UIDS
+
+VALID_UIDS = load_uids_from_file()
+print(f"Loaded {len(VALID_UIDS)} UIDs from whitelist file")
+
 # In-memory request logs
 request_logs = []
 
@@ -59,12 +83,17 @@ def nfc_protected_route(f):
         unlock_token = session.get('nfc_unlock_token')
         # Validate the token using the database function
         if not unlock_token or not db.validate_unlock_token(unlock_token):
-             # Check if login is also required for this route (added via login_required decorator)
+            # Clear the invalid token from session
+            if unlock_token:
+                print(f"Clearing invalid/expired unlock token from session")
+                session.pop('nfc_unlock_token', None)
+                
+            # Check if login is also required for this route (added via login_required decorator)
             is_login_required = getattr(f, 'login_required', False)
             if is_login_required and not session.get('logged_in'):
-                 # If login is required but user isn't logged in, prioritize login redirect
-                 flash('Please log in to access this page.', 'warning')
-                 return redirect(url_for('login'))
+                # If login is required but user isn't logged in, prioritize login redirect
+                flash('Please log in to access this page.', 'warning')
+                return redirect(url_for('login'))
             else:
                 # If login isn't required or user is logged in, but NFC is missing/invalid
                 flash('Access denied. Please scan a valid NFC tag.', 'error')
@@ -158,8 +187,16 @@ def login():
 
 @app.route('/logout')
 def logout():
+    """Logs the user out and clears all session data."""
+    # Clear specific keys
     session.pop('logged_in', None)
-    return redirect(url_for('index'))
+    session.pop('nfc_unlock_token', None)
+    
+    # For complete security, clear the entire session
+    session.clear()
+    
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login')) # Redirect to login after logout
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -224,8 +261,25 @@ def unlock_via_nfc():
     if not scanned_token:
         flash('NFC token missing in unlock attempt.', 'error')
         return redirect(url_for('login'))
-
-    if scanned_token in app.config['VALID_NFC_TAGS']:
+        
+    # Check if already unlocked with a valid token - prevents token refresh attacks
+    # First check if there's an existing token in the session
+    existing_token = session.get('nfc_unlock_token')
+    if existing_token and db.validate_unlock_token(existing_token):
+        print(f"Already has valid unlock token - preventing new token generation")
+        flash('Already unlocked! Access maintained.', 'info')
+        return redirect(url_for('index'))
+    
+    # Clear any existing invalid session token
+    if existing_token:
+        session.pop('nfc_unlock_token', None)
+    
+    # Check if the scanned token is in our whitelist
+    if scanned_token in VALID_UIDS:
+        # Clean up expired tokens first
+        db.cleanup_expired_tokens()
+        
+        # Generate a new unique token
         session_token = secrets.token_hex(16)
         try:
             db.add_unlock_session(session_token)
@@ -255,15 +309,46 @@ def login_required(f):
 
 @app.before_request
 def run_token_cleanup():
-    """Cleans up expired tokens occasionally before handling a request."""
-    import random
-    if not request.path.startswith('/static') and request.path != '/unlock':
-        if random.random() < 0.05: # Run approx 5% of the time
-            try:
-                print("Running periodic cleanup of expired unlock tokens...")
-                db.cleanup_expired_tokens()
-            except Exception as e:
-                print(f"Error during periodic token cleanup: {e}")
+    """Cleans up expired tokens before handling relevant requests."""
+    # Skip cleanup for static files and the unlock endpoint itself
+    if request.path.startswith('/static') or request.path == '/unlock':
+        return
+        
+    try:
+        # Run cleanup on ALL other requests to ensure timely token expiration
+        print("Running cleanup of expired unlock tokens...")
+        db.cleanup_expired_tokens()
+    except Exception as e:
+        print(f"Error during token cleanup: {e}")
+
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_login():
+    """Admin login page to access whitelist management"""
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        if username == app.config['ADMIN_USERNAME'] and password == app.config['ADMIN_PASSWORD']:
+            session['logged_in'] = True
+            flash('Login successful', 'success')
+            return redirect(url_for('admin_whitelist'))
+        else:
+            flash('Invalid credentials', 'error')
+    
+    return render_template('admin_login.html')
+
+@app.route('/admin/whitelist', methods=['GET', 'POST'])
+@login_required
+def admin_whitelist():
+    """Simple page to view the current whitelist"""
+    if request.method == 'POST':
+        action = request.form.get('action')
+        if action == 'reload':
+            # Reload UIDs from file
+            reload_uids()
+            flash('Whitelist reloaded from file', 'success')
+    
+    uids = sorted(list(VALID_UIDS))
+    return render_template('admin_whitelist.html', whitelist=uids)
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+     app.run(host='0.0.0.0', port=5000, debug=True)
